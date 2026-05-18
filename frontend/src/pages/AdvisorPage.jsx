@@ -2,33 +2,34 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ReusableLeadForm from '../components/ReusableLeadForm';
 import '../style/AdvisorPage.css';
-const API_BASE = 'https://luxurynest.onrender.com/api/'
+
+// ✅ FIX: remove extra /api
+const API_BASE = 'https://luxurynest.onrender.com';
 
 function AdvisorPage() {
   const [advisors, setAdvisors] = useState([]);
   const [selectedAdvisorId, setSelectedAdvisorId] = useState('');
-  const [purpose, setPurpose] = useState(''); // 'buying' or 'renting'
-  const [propertyType, setPropertyType] = useState(''); // 'apartmentBuilder' or 'plot' (only for buying)
+  const [purpose, setPurpose] = useState('');
+  const [propertyType, setPropertyType] = useState('');
   const [formOpen, setFormOpen] = useState(false);
-  
-  // Dropdown states
+
   const [openPurpose, setOpenPurpose] = useState(false);
   const [openPropertyType, setOpenPropertyType] = useState(false);
 
   useEffect(() => {
     const fetchAdvisors = async () => {
       try {
+        // ✅ FIX: correct endpoint
         const res = await axios.get(`${API_BASE}/api/advisors`);
         setAdvisors(res.data);
         if (res.data.length > 0) setSelectedAdvisorId(res.data[0]._id);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to fetch advisors:", err);
       }
     };
     fetchAdvisors();
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.custom-select-wrapper')) {
@@ -47,6 +48,7 @@ function AdvisorPage() {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+
     return `https://ui-avatars.com/api/?name=${initials}&background=C6A43F&color=fff&size=100&rounded=true&bold=true`;
   };
 
@@ -56,7 +58,7 @@ function AdvisorPage() {
       return;
     }
     if (purpose === 'buying' && !propertyType) {
-      alert('Please select property type (Apartment/Builder or Plot)');
+      alert('Please select property type');
       return;
     }
     setFormOpen(true);
@@ -81,7 +83,6 @@ function AdvisorPage() {
         <p>Share your requirement and we'll connect you with the right advisor.</p>
       </div>
 
-      {/* Advisor Cards */}
       <div className="advisor-cards-grid">
         {advisors.map((adv) => (
           <div
@@ -107,60 +108,39 @@ function AdvisorPage() {
         ))}
       </div>
 
-      {/* Purpose & Property Type selection with Custom Dropdowns */}
       <div className="advisor-form-container">
         <h3>Tell us about your requirement</h3>
-        
-        {/* Purpose Dropdown */}
+
         <div className="form-group">
           <label>What are you looking for? *</label>
           <div className="custom-select-wrapper">
-            <div 
-              className="custom-select-trigger"
-              onClick={() => setOpenPurpose(!openPurpose)}
-            >
+            <div className="custom-select-trigger" onClick={() => setOpenPurpose(!openPurpose)}>
               <span className="selected-value">{getPurposeLabel()}</span>
-              <i className="fas fa-chevron-down"></i>
             </div>
             {openPurpose && (
               <ul className="custom-options open">
-                <li onClick={() => {
-                  setPurpose('buying');
-                  setPropertyType('');
-                  setOpenPurpose(false);
-                }}>Buying</li>
-                <li onClick={() => {
-                  setPurpose('renting');
-                  setPropertyType('');
-                  setOpenPurpose(false);
-                }}>Renting</li>
+                <li onClick={() => { setPurpose('buying'); setPropertyType(''); setOpenPurpose(false); }}>Buying</li>
+                <li onClick={() => { setPurpose('renting'); setPropertyType(''); setOpenPurpose(false); }}>Renting</li>
               </ul>
             )}
           </div>
         </div>
 
-        {/* Property Type Dropdown (only when purpose is buying) */}
         {purpose === 'buying' && (
           <div className="form-group">
             <label>Property Type *</label>
             <div className="custom-select-wrapper">
-              <div 
-                className="custom-select-trigger"
-                onClick={() => setOpenPropertyType(!openPropertyType)}
-              >
+              <div className="custom-select-trigger" onClick={() => setOpenPropertyType(!openPropertyType)}>
                 <span className="selected-value">{getPropertyTypeLabel()}</span>
-                <i className="fas fa-chevron-down"></i>
               </div>
               {openPropertyType && (
                 <ul className="custom-options open">
-                  <li onClick={() => {
-                    setPropertyType('apartmentBuilder');
-                    setOpenPropertyType(false);
-                  }}>Apartment / Builder Floor</li>
-                  <li onClick={() => {
-                    setPropertyType('plot');
-                    setOpenPropertyType(false);
-                  }}>Plot</li>
+                  <li onClick={() => { setPropertyType('apartmentBuilder'); setOpenPropertyType(false); }}>
+                    Apartment / Builder Floor
+                  </li>
+                  <li onClick={() => { setPropertyType('plot'); setOpenPropertyType(false); }}>
+                    Plot
+                  </li>
                 </ul>
               )}
             </div>
@@ -175,7 +155,7 @@ function AdvisorPage() {
         onClose={() => setFormOpen(false)}
         actionType="advisor"
         advisorId={selectedAdvisorId}
-        purpose={purpose === 'buying' ? 'buying' : 'renting'}
+        purpose={purpose}
         propertyType={propertyType}
       />
     </div>
