@@ -1,0 +1,332 @@
+/* ========== PROJECTS MANAGEMENT PAGE – COMPLETE CSS ========== */
+/* Grid View | Table View | Responsive */
+
+/* Search Section */
+.search-section {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.global-search {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #CBD5E1;
+    border-radius: 48px;
+    font-size: 0.9rem;
+    background: white;
+    transition: all 0.2s;
+}
+
+.global-search:focus {
+    outline: none;
+    border-color: #C6A43F;
+    box-shadow: 0 0 0 3px rgba(198, 164, 63, 0.1);
+}
+
+.btn-filter {
+    background: white;
+    border: 1px solid #CBD5E1;
+    border-radius: 48px;
+    padding: 0.75rem 1.2rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: 0.2s;
+}
+
+.btn-filter:hover {
+    background: #F8FAFC;
+    border-color: #C6A43F;
+    color: #C6A43F;
+}
+
+/* View Toggle Buttons */
+.projects-view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin: 1rem 0;
+}
+
+/* ========== GRID VIEW (Cards) ========== */
+.project-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.project-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid #E9EEF3;
+}
+
+.project-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
+    border-color: #C6A43F;
+}
+
+.project-card-image {
+    height: 160px;
+    background-size: cover;
+    background-position: center;
+    background-color: #F1F5F9;
+}
+
+.project-card-content {
+    padding: 1rem;
+}
+
+.project-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: #1E2A3A;
+}
+
+.project-card-location,
+.project-card-developer {
+    font-size: 0.8rem;
+    color: #5A6E7F;
+    margin-bottom: 0.3rem;
+}
+
+.project-card-location i,
+.project-card-developer i {
+    width: 18px;
+    color: #C6A43F;
+}
+
+.project-status {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin: 0.5rem 0;
+}
+
+.project-status.active {
+    background: #E6F7E6;
+    color: #2E7D32;
+}
+
+.project-status.inactive {
+    background: #FEE2E2;
+    color: #B91C1C;
+}
+
+/* ========== TABLE VIEW ========== */
+.projects-table-wrapper {
+    overflow-x: auto;
+    border-radius: 20px;
+    border: 1px solid #E9EEF3;
+    background: white;
+    margin-top: 1rem;
+}
+
+.projects-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 700px;
+}
+
+.projects-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: #F8FAFC;
+    font-weight: 600;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.projects-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #F1F5F9;
+    vertical-align: middle;
+}
+
+.projects-table tr:hover td {
+    background: #FEFCE8;
+}
+
+.table-status {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.table-status.active {
+    background: #E6F7E6;
+    color: #2E7D32;
+}
+
+.table-status.inactive {
+    background: #FEE2E2;
+    color: #B91C1C;
+}
+
+.table-actions .btn-view {
+    padding: 0.2rem 0.8rem;
+    font-size: 0.7rem;
+}
+
+/* ========== BUTTON ========== */
+.btn-view {
+    background: transparent;
+    border: 1.5px solid #C6A43F;
+    border-radius: 40px;
+    padding: 0.3rem 1rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #C6A43F;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-view:hover {
+    background: #C6A43F;
+    color: #0F172A;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .search-section {
+        flex-direction: column;
+    }
+    
+    .global-search, .btn-filter {
+        width: 100%;
+    }
+    
+    .projects-view-toggle {
+        justify-content: center;
+    }
+    
+    .project-card-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .projects-table-wrapper {
+        border-radius: 16px;
+    }
+}
+
+/* No overflow */
+.project-card-grid,
+.project-card,
+.projects-table-wrapper {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+/* ========== PROJECTS DELETE STYLES ========== */
+
+/* Delete Button */
+.btn-delete {
+    background: #FEE2E2;
+    color: #B91C1C;
+    border: 1px solid #FECACA;
+    border-radius: 40px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete:hover {
+    background: #FECACA;
+    transform: scale(1.02);
+}
+
+.btn-danger-sm {
+    background: #DC2626;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.8rem;
+    border-radius: 40px;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.btn-danger-sm:hover {
+    background: #B91C1C;
+}
+
+/* Checkbox Styling */
+.project-select-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #C6A43F;
+}
+
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+    display: none;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #FEFCE8;
+    border-radius: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Confirm Modal */
+.confirm-modal .modal-content {
+    text-align: center;
+}
+
+.confirm-modal .modal-actions {
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.btn-danger {
+    background: #DC2626;
+    color: white;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 40px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background: #B91C1C;
+}
+
+/* Project Card - ensure delete button fits */
+.project-card-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.project-card-content .btn-delete {
+    margin-left: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .btn-delete, .btn-danger-sm {
+        padding: 0.2rem 0.6rem;
+        font-size: 0.7rem;
+    }
+    
+    .project-select-checkbox {
+        width: 14px;
+        height: 14px;
+    }
+}

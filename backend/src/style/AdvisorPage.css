@@ -1,0 +1,318 @@
+/* ========== ADVISOR PAGE – COMPLETE CSS (with Z-INDEX FIX) ========== */
+
+/* Container */
+.advisor-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Hero Section */
+.advisor-hero {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.advisor-hero h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1E2A3A;
+    margin-bottom: 0.5rem;
+}
+
+.advisor-hero p {
+    color: #5A6E7F;
+    font-size: 1rem;
+}
+
+/* ========== ADVISOR CARDS GRID ========== */
+.advisor-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Advisor Card */
+.advisor-card {
+    background: white;
+    border-radius: 24px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.advisor-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
+}
+
+.advisor-card.selected {
+    border-color: #C6A43F;
+    background: #FFF9F0;
+}
+
+.advisor-card img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+}
+
+.advisor-card h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #1E2A3A;
+}
+
+.advisor-card .role {
+    font-size: 0.85rem;
+    color: #5A6E7F;
+    margin-bottom: 1rem;
+}
+
+.advisor-contact {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+}
+
+.advisor-contact a {
+    color: #C6A43F;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.advisor-contact a:hover {
+    color: #b3922e;
+    text-decoration: underline;
+}
+
+.advisor-contact span {
+    color: #5A6E7F;
+}
+
+/* ========== FORM CONTAINER ========== */
+.advisor-form-container {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    position: relative;
+    z-index: 1;
+    overflow: visible;
+}
+
+.advisor-form-container h3 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1E2A3A;
+}
+
+.advisor-form-container .form-group {
+    margin-bottom: 1.2rem;
+    position: relative;
+    overflow: visible;
+}
+
+.advisor-form-container .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #5A6E7F;
+    margin-bottom: 0.4rem;
+}
+
+/* ========== CUSTOM DROPDOWNS (FIXED Z-INDEX) ========== */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+    z-index: 10;
+}
+
+.custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 40px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.custom-select-trigger:hover {
+    border-color: #C6A43F;
+}
+
+.custom-select-trigger .selected-value {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.custom-select-trigger i {
+    color: #94A3B8;
+}
+
+/* 🔥 CRITICAL FIX: Dropdown options appear above everything */
+.custom-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    margin-top: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 99999 !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.custom-options li {
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    list-style: none;
+    transition: background 0.2s;
+}
+
+.custom-options li:hover {
+    background: #F1F5F9;
+    color: #C6A43F;
+}
+
+/* When dropdown is open, boost parent z-index */
+.custom-select-wrapper:has(.custom-options) {
+    z-index: 1000;
+}
+
+/* ========== BUTTON ========== */
+.btn-gold {
+    background: #C6A43F;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    color: #0F172A;
+    position: relative;
+    z-index: 1;
+}
+
+.btn-gold:hover {
+    background: #b3922e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(198, 164, 63, 0.3);
+}
+
+.btn-gold:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .advisor-cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+    
+    .advisor-card {
+        padding: 1rem;
+    }
+    
+    .advisor-card img {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .advisor-contact {
+        flex-direction: column;
+        gap: 0.4rem;
+        align-items: center;
+    }
+}
+
+@media (max-width: 640px) {
+    .advisor-page {
+        padding: 1rem;
+    }
+    
+    .advisor-hero h1 {
+        font-size: 1.5rem;
+    }
+    
+    .advisor-cards-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .custom-select-trigger {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    .custom-options li {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    .advisor-form-container {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .advisor-hero h1 {
+        font-size: 1.3rem;
+    }
+    
+    .advisor-card h3 {
+        font-size: 1rem;
+    }
+    
+    .btn-gold {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* No overflow */
+.advisor-page,
+.advisor-cards-grid,
+.advisor-form-container,
+.custom-select-wrapper {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+/* Ensure parent containers don't clip dropdowns */
+.advisor-form-container,
+.form-group,
+.custom-select-wrapper {
+    overflow: visible !important;
+}
+
+
+

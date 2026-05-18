@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>LuxuryNest Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #F8F8F8; padding: 2rem; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: #1E1E1E; color: white; padding: 1.5rem 2rem; font-family: 'Playfair Display', serif; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .header h1 { font-size: 1.5rem; font-weight: 600; }
+        .admin-profile { display: flex; align-items: center; gap: 1rem; }
+        .admin-profile span { font-size: 0.9rem; font-family: 'Inter'; }
+        .logout-btn { background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; }
+        .content { padding: 2rem; }
+        .tabs { display: flex; gap: 1rem; border-bottom: 1px solid #E8E8E8; margin-bottom: 2rem; flex-wrap: wrap; }
+        .tab-btn { background: none; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; cursor: pointer; color: #666; transition: 0.2s; }
+        .tab-btn.active { color: #C6A43F; border-bottom: 2px solid #C6A43F; font-weight: 600; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; align-items: flex-end; }
+        .filter-group { flex: 1; min-width: 150px; }
+        .filter-group label { display: block; font-size: 0.7rem; font-weight: 600; margin-bottom: 0.2rem; color: #1E1E1E; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-group input, .filter-group select { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; }
+        .btn-primary { background: #C6A43F; color: #1E1E1E; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 500; }
+        .btn-secondary { background: #f0f0f0; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; }
+        .tab-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
+        .card { background: white; border: 1px solid #E8E8E8; border-radius: 16px; overflow: hidden; }
+        .card-image { height: 160px; background: #f0f0f0; background-size: cover; background-position: center; }
+        .card-content { padding: 1rem; }
+        .card-title { font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem; }
+        .card-meta { color: #666; font-size: 0.8rem; margin-bottom: 0.25rem; }
+        .card-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+        button.small { padding: 0.25rem 0.75rem; font-size: 0.75rem; background: #f0f0f0; border: none; border-radius: 4px; cursor: pointer; }
+        button.small.primary { background: #C6A43F; color: #1E1E1E; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #E8E8E8; padding: 10px; text-align: left; font-size: 0.85rem; }
+        th { background: #F0F0F0; }
+        .badge { background: #C6A43F; padding: 2px 6px; border-radius: 12px; font-size: 0.7rem; display: inline-block; }
+        .loading, .error { text-align: center; padding: 2rem; }
+
+        /* Modal styles */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; max-width: 900px; width: 95%; border-radius: 24px; padding: 1.5rem; max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { margin-bottom: 1rem; font-family: 'Playfair Display', serif; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .form-group { display: flex; flex-direction: column; }
+        .full-width { grid-column: span 2; }
+        label { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 0.25rem; color: #1E1E1E; }
+        input, select, textarea { padding: 0.6rem; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+        input[readonly] { background: #f5f5f5; cursor: default; }
+        .image-grid { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
+        .image-item { position: relative; width: 100px; height: 100px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+        .image-item img { width: 100%; height: 100%; object-fit: cover; }
+        .remove-img { position: absolute; top: 2px; right: 2px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; }
+        .step-indicator { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #E8E8E8; padding-bottom: 0.5rem; }
+        .step { flex: 1; text-align: center; padding: 0.5rem; background: #F0F0F0; border-radius: 2rem; cursor: pointer; }
+        .step.active { background: #C6A43F; color: white; }
+        .modal-actions { display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end; }
+
+        .toast { position: fixed; bottom: 2rem; right: 2rem; background: #1E1E1E; color: white; padding: 0.75rem 1.5rem; border-radius: 2rem; z-index: 1100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: fadeInOut 3s forwards; }
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .header, .content { padding: 1rem; }
+            .form-row { grid-template-columns: 1fr; gap: 0.75rem; }
+            .full-width { grid-column: span 1; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+            tr { margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 12px; padding: 0.5rem; background: white; }
+            td { display: flex; justify-content: space-between; align-items: center; border: none; padding: 0.5rem; border-bottom: 1px solid #eee; }
+            td:before { content: attr(data-label); font-weight: 600; width: 40%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>LuxuryNest Admin</h1>
+        <div class="admin-profile">
+            <span id="adminName"></span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+    <div class="content">
+        <div id="loginSection" style="display: none; text-align: center; padding: 2rem;">
+            <h2>Admin Login</h2>
+            <input type="email" id="email" placeholder="Email" style="width: 280px; padding: 10px; margin: 8px;"><br>
+            <input type="password" id="password" placeholder="Password" style="width: 280px; padding: 10px; margin: 8px;"><br>
+            <button onclick="login()" class="btn-primary">Login</button>
+            <div id="loginError" class="error"></div>
+        </div>
+        <div id="dashboardSection" style="display: none;">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="leads">Leads</button>
+                <button class="tab-btn" data-tab="projects">Projects</button>
+                <button class="tab-btn" data-tab="properties">Properties</button>
+            </div>
+            <!-- Leads Tab -->
+            <div id="leadsPane" class="tab-pane active">
+                <div class="tab-header">
+                    <div class="filter-bar">
+                        <div class="filter-group"><label>Search</label><input type="text" id="leadSearch" placeholder="Name, email, phone..."></div>
+                        <div class="filter-group"><label>Status</label><select id="leadStatus"><option value="">All</option><option value="new">New</option><option value="contacted">Contacted</option><option value="closed">Closed</option></select></div>
+                        <div class="filter-group"><label>Source</label><select id="leadSource"><option value="">All</option><option value="property_detail">Property Detail</option><option value="advisor_page">Advisor Page</option><option value="deal_match">Deal Match</option><option value="contact_form">Contact Form</option><option value="admin_manual">Admin Manual</option></select></div>
+                        <div class="filter-group"><label>Project</label><select id="leadProjectFilter"><option value="">All</option></select></div>
+                        <div class="filter-group"><label>Configuration</label><input type="text" id="leadConfigFilter" placeholder="e.g., 2 BHK"></div>
+                        <button class="btn-secondary" onclick="clearLeadFilters()">Clear</button>
+                    </div>
+                    <button class="btn-primary" onclick="openAddModal('lead')">+ Add Lead</button>
+                </div>
+                <div id="leadsContainer" class="loading">Loading leads...</div>
+            </div>
+            <!-- Projects Tab -->
+            <div id="projectsPane" class="tab-pane">
+                <div class="tab-header">
+                    <div class="filter-bar">
+                        <div class="filter-group"><label>Search</label><input type="text" id="projectSearch" placeholder="Name, location..."></div>
+                        <div class="filter-group"><label>Status</label><select id="projectStatus"><option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+                        <div class="filter-group"><label>Sector</label><select id="projectSectorFilter"><option value="">All</option></select></div>
+                        <div class="filter-group"><label>Location/Area</label><select id="projectLocationFilter"><option value="">All</option></select></div>
+                        <button class="btn-secondary" onclick="clearProjectFilters()">Clear</button>
+                    </div>
+                    <button class="btn-primary" onclick="openAddModal('project')">+ Add Project</button>
+                </div>
+                <div id="projectsContainer" class="loading">Loading projects...</div>
+            </div>
+            <!-- Properties Tab -->
+            <div id="propertiesPane" class="tab-pane">
+                <div class="tab-header">
+                    <div class="filter-bar">
+                        <div class="filter-group"><label>Search</label><input type="text" id="propertySearch" placeholder="Title, slug..."></div>
+                        <div class="filter-group"><label>Type</label><select id="propertyTypeFilter"><option value="">All</option><option value="resale">Resale</option><option value="rent">Rent</option><option value="floor">Floor</option><option value="plot">Plot</option></select></div>
+                        <div class="filter-group"><label>Status</label><select id="propertyStatusFilter"><option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+                        <div class="filter-group"><label>Project</label><select id="propertyProjectFilter"><option value="">All</option></select></div>
+                        <div class="filter-group"><label>Sector</label><select id="propertySectorFilter"><option value="">All</option></select></div>
+                        <div class="filter-group"><label>Configuration</label><input type="text" id="propertyConfigFilter" placeholder="e.g., 3"></div>
+                        <button class="btn-secondary" onclick="clearPropertyFilters()">Clear</button>
+                    </div>
+                    <button class="btn-primary" onclick="openAddModal('property')">+ Add Property</button>
+                </div>
+                <div id="propertiesContainer" class="loading">Loading properties...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="addModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3 id="modalTitle">Add New</h3>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = window.location.origin + '/api';
+    let token = localStorage.getItem('adminToken');
+    let leadsData = [], projectsData = [], propertiesData = [], areasData = [];
+    let propertyFormState = { step: 1, data: {}, configs: [] };
+    let uploadedFiles = [];
+
+    function showToast(msg, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.background = isError ? '#dc3545' : '#1E1E1E';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    if (token) showDashboard(); else document.getElementById('loginSection').style.display = 'block';
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const tab = this.dataset.tab;
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.getElementById(tab + 'Pane').classList.add('active');
+        if (tab === 'leads') renderLeads();
+        else if (tab === 'projects') renderProjects();
+        else if (tab === 'properties') renderProperties();
+    }));
+
+    // Attach live filter listeners (search & filter working)
+    function attachFilterListeners() {
+        // Leads
+        const leadSearch = document.getElementById('leadSearch');
+        const leadStatus = document.getElementById('leadStatus');
+        const leadSource = document.getElementById('leadSource');
+        const leadProject = document.getElementById('leadProjectFilter');
+        const leadConfig = document.getElementById('leadConfigFilter');
+        if (leadSearch) leadSearch.addEventListener('input', () => renderLeads());
+        if (leadStatus) leadStatus.addEventListener('change', () => renderLeads());
+        if (leadSource) leadSource.addEventListener('change', () => renderLeads());
+        if (leadProject) leadProject.addEventListener('change', () => renderLeads());
+        if (leadConfig) leadConfig.addEventListener('input', () => renderLeads());
+
+        // Projects
+        const projSearch = document.getElementById('projectSearch');
+        const projStatus = document.getElementById('projectStatus');
+        const projSector = document.getElementById('projectSectorFilter');
+        const projLocation = document.getElementById('projectLocationFilter');
+        if (projSearch) projSearch.addEventListener('input', () => renderProjects());
+        if (projStatus) projStatus.addEventListener('change', () => renderProjects());
+        if (projSector) projSector.addEventListener('change', () => renderProjects());
+        if (projLocation) projLocation.addEventListener('change', () => renderProjects());
+
+        // Properties
+        const propSearch = document.getElementById('propertySearch');
+        const propType = document.getElementById('propertyTypeFilter');
+        const propStatus = document.getElementById('propertyStatusFilter');
+        const propProject = document.getElementById('propertyProjectFilter');
+        const propSector = document.getElementById('propertySectorFilter');
+        const propConfig = document.getElementById('propertyConfigFilter');
+        if (propSearch) propSearch.addEventListener('input', () => renderProperties());
+        if (propType) propType.addEventListener('change', () => renderProperties());
+        if (propStatus) propStatus.addEventListener('change', () => renderProperties());
+        if (propProject) propProject.addEventListener('change', () => renderProperties());
+        if (propSector) propSector.addEventListener('change', () => renderProperties());
+        if (propConfig) propConfig.addEventListener('input', () => renderProperties());
+    }
+
+    async function login() {
+        const email = document.getElementById('email').value, password = document.getElementById('password').value;
+        try {
+            const res = await fetch(API_BASE + '/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('adminToken', data.token);
+                token = data.token;
+                document.getElementById('adminName').innerText = email.split('@')[0];
+                showDashboard();
+            } else {
+                document.getElementById('loginError').innerText = data.message || 'Login failed';
+            }
+        } catch(err) {
+            document.getElementById('loginError').innerText = 'Network error';
+        }
+    }
+
+    async function showDashboard() {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('dashboardSection').style.display = 'block';
+        await Promise.all([fetchLeads(), fetchProjects(), fetchProperties(), fetchAreas()]);
+        populateFilterDropdowns();
+        attachFilterListeners();
+        renderLeads();
+    }
+
+    async function fetchLeads() { try { const res = await fetch(API_BASE + '/leads', { headers: { 'Authorization': 'Bearer ' + token } }); if (res.ok) leadsData = await res.json(); } catch(e) {} }
+    async function fetchProjects() { try { const res = await fetch(API_BASE + '/admin/projects', { headers: { 'Authorization': 'Bearer ' + token } }); if (res.ok) projectsData = await res.json(); } catch(e) {} }
+    async function fetchProperties() { try { const res = await fetch(API_BASE + '/admin/properties', { headers: { 'Authorization': 'Bearer ' + token } }); if (res.ok) propertiesData = await res.json(); } catch(e) {} }
+    async function fetchAreas() { try { const res = await fetch(API_BASE + '/areas'); if (res.ok) areasData = await res.json(); } catch(e) { console.warn('Areas API not available'); } }
+
+    function populateFilterDropdowns() {
+        // Lead project filter
+        const leadProj = document.getElementById('leadProjectFilter');
+        if (leadProj) {
+            leadProj.innerHTML = '<option value="">All</option>';
+            projectsData.forEach(p => leadProj.innerHTML += `<option value="${p._id}">${escapeHtml(p.name)}</option>`);
+        }
+        // Property project filter
+        const propProj = document.getElementById('propertyProjectFilter');
+        if (propProj) {
+            propProj.innerHTML = '<option value="">All</option>';
+            projectsData.forEach(p => propProj.innerHTML += `<option value="${p._id}">${escapeHtml(p.name)}</option>`);
+        }
+        // Project sector filter
+        const sectors = [...new Set(projectsData.map(p => p.location?.sector).filter(Boolean))];
+        const projSect = document.getElementById('projectSectorFilter');
+        if (projSect) {
+            projSect.innerHTML = '<option value="">All</option>';
+            sectors.forEach(s => projSect.innerHTML += `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`);
+        }
+        const propSect = document.getElementById('propertySectorFilter');
+        if (propSect) {
+            propSect.innerHTML = '<option value="">All</option>';
+            sectors.forEach(s => propSect.innerHTML += `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`);
+        }
+        // Project location filter
+        const locations = [...new Set(projectsData.map(p => p.area || p.microMarket).filter(Boolean))];
+        const projLoc = document.getElementById('projectLocationFilter');
+        if (projLoc) {
+            projLoc.innerHTML = '<option value="">All</option>';
+            locations.forEach(l => projLoc.innerHTML += `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`);
+        }
+    }
+
+    // ========== LEADS (working filters) ==========
+    function renderLeads() {
+        const search = (document.getElementById('leadSearch')?.value || '').toLowerCase();
+        const status = document.getElementById('leadStatus')?.value || '';
+        const source = document.getElementById('leadSource')?.value || '';
+        const projectId = document.getElementById('leadProjectFilter')?.value || '';
+        const configFilter = (document.getElementById('leadConfigFilter')?.value || '').toLowerCase();
+        let filtered = leadsData.filter(l => {
+            const matchesSearch = !search || l.name.toLowerCase().includes(search) || (l.email || '').toLowerCase().includes(search) || l.phone.includes(search);
+            const matchesStatus = !status || l.status === status;
+            const matchesSource = !source || l.source === source;
+            const matchesProject = !projectId || (l.requirementDetails?.projectId === projectId);
+            let matchesConfig = true;
+            if (configFilter) {
+                const bed = l.requirementDetails?.bedrooms?.toString() || '';
+                matchesConfig = bed.includes(configFilter);
+            }
+            return matchesSearch && matchesStatus && matchesSource && matchesProject && matchesConfig;
+        });
+        const container = document.getElementById('leadsContainer');
+        if (!filtered.length) { container.innerHTML = '<p>No leads found.</p>'; return; }
+        let html = '<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Property</th><th>Source</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+        filtered.forEach(lead => {
+            html += `<tr>
+                <td data-label="Name">${escapeHtml(lead.name)}</td>
+                <td data-label="Email">${escapeHtml(lead.email || '')}</td>
+                <td data-label="Phone">${escapeHtml(lead.phone)}</td>
+                <td data-label="Property">${lead.propertySlug || '-'}</td>
+                <td data-label="Source"><span class="badge">${lead.source || '-'}</span></td>
+                <td data-label="Status">${lead.status}</td>
+                <td data-label="Date">${new Date(lead.createdAt).toLocaleString()}</td>
+                <td data-label="Actions">
+                    <button class="small primary" onclick="window.location.href='/luxuryadmin/detail.html?type=lead&id=${lead._id}'">View</button>
+                </td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    // ========== PROJECTS (working filters) ==========
+    function renderProjects() {
+        const search = (document.getElementById('projectSearch')?.value || '').toLowerCase();
+        const status = document.getElementById('projectStatus')?.value || '';
+        const sector = document.getElementById('projectSectorFilter')?.value || '';
+        const location = document.getElementById('projectLocationFilter')?.value || '';
+        let filtered = projectsData.filter(p => {
+            const matchesSearch = !search || p.name.toLowerCase().includes(search) || (p.location?.address || '').toLowerCase().includes(search);
+            const matchesStatus = !status || p.liveStatus === status;
+            const matchesSector = !sector || p.location?.sector === sector;
+            const matchesLocation = !location || (p.area === location || p.microMarket === location);
+            return matchesSearch && matchesStatus && matchesSector && matchesLocation;
+        });
+        const container = document.getElementById('projectsContainer');
+        if (!filtered.length) { container.innerHTML = '<p>No projects found.</p>'; return; }
+        let html = '<div class="card-grid">';
+        filtered.forEach(proj => {
+            const img = proj.images?.[0] || 'https://via.placeholder.com/300x180?text=No+Image';
+            html += `<div class="card">
+                <div class="card-image" style="background-image: url('${img}');"></div>
+                <div class="card-content">
+                    <div class="card-title">${escapeHtml(proj.name)}</div>
+                    <div class="card-meta">${escapeHtml(proj.location?.address || '')}</div>
+                    <div class="card-meta">Status: <strong>${proj.liveStatus || 'active'}</strong></div>
+                    <div class="card-actions">
+                        <button class="small primary" onclick="window.location.href='/luxuryadmin/detail.html?type=project&id=${proj._id}'">View</button>
+                    </div>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ========== PROPERTIES (working filters) ==========
+    function renderProperties() {
+        const search = (document.getElementById('propertySearch')?.value || '').toLowerCase();
+        const type = document.getElementById('propertyTypeFilter')?.value || '';
+        const status = document.getElementById('propertyStatusFilter')?.value || '';
+        const projectId = document.getElementById('propertyProjectFilter')?.value || '';
+        const sector = document.getElementById('propertySectorFilter')?.value || '';
+        const configFilter = (document.getElementById('propertyConfigFilter')?.value || '').toLowerCase();
+        let filtered = propertiesData.filter(p => {
+            const matchesSearch = !search || p.title.toLowerCase().includes(search) || p.slug.toLowerCase().includes(search);
+            const matchesType = !type || (p.unitDetails?.type === type);
+            const matchesStatus = !status || p.liveStatus === status;
+            const matchesProject = !projectId || (p.projectId?._id === projectId);
+            const projectSector = p.projectId?.location?.sector || '';
+            const matchesSector = !sector || projectSector === sector;
+            let matchesConfig = true;
+            if (configFilter) {
+                const bedrooms = p.unitDetails?.bedrooms?.toString() || '';
+                matchesConfig = bedrooms.includes(configFilter);
+            }
+            return matchesSearch && matchesType && matchesStatus && matchesProject && matchesSector && matchesConfig;
+        });
+        const container = document.getElementById('propertiesContainer');
+        if (!filtered.length) { container.innerHTML = '<p>No properties found.</p>'; return; }
+        let html = '<div class="card-grid">';
+        filtered.forEach(prop => {
+            const img = prop.images?.[0] || 'https://via.placeholder.com/300x180?text=No+Image';
+            const projName = prop.projectId?.name || '-';
+            html += `<div class="card">
+                <div class="card-image" style="background-image: url('${img}');"></div>
+                <div class="card-content">
+                    <div class="card-title">${escapeHtml(prop.title)}</div>
+                    <div class="card-meta">${escapeHtml(prop.unitDetails?.price || '')} | ${prop.unitDetails?.type || ''}</div>
+                    <div class="card-meta">Project: ${escapeHtml(projName)}</div>
+                    <div class="card-meta">Status: <strong>${prop.liveStatus || 'inactive'}</strong></div>
+                    <div class="card-actions">
+                        <button class="small primary" onclick="window.location.href='/luxuryadmin/detail.html?type=property&id=${prop._id}'">View</button>
+                    </div>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ========== MODAL OPENING (Lead, Project, Property - no delete) ==========
+    let currentAddType = '';
+
+    function openAddModal(type) {
+        currentAddType = type;
+        const modal = document.getElementById('addModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        uploadedFiles = [];
+        propertyFormState = { step: 1, data: {}, configs: [] };
+
+        if (type === 'lead') {
+            modalTitle.innerText = 'Add New Lead';
+            modalContent.innerHTML = `
+                <form id="addForm" class="lead-form">
+                    <div class="form-row"><div class="form-group"><label>Full Name *</label><input name="name" required></div><div class="form-group"><label>Email</label><input name="email" type="email"></div></div>
+                    <div class="form-row"><div class="form-group"><label>Phone *</label><input name="phone" required></div><div class="form-group"><label>Select Project</label><select name="projectId" id="leadProjectSelect">${projectsData.map(p => `<option value="${p._id}">${escapeHtml(p.name)}</option>`).join('')}<option value="">None</option></select></div></div>
+                    <div class="form-row"><div class="form-group"><label>Configuration</label><select name="configId" id="leadConfigSelect"><option value="">Select project first</option></select></div></div>
+                    <div class="form-row"><div class="form-group"><label>Purpose</label><select name="purpose"><option value="buying">Buying</option><option value="renting">Renting</option><option value="floor">Floor</option><option value="plot">Plot</option></select></div><div class="form-group"><label>Budget Range</label><input name="budget" placeholder="e.g., 1.5-2 Cr"></div></div>
+                    <div class="form-row"><div class="form-group"><label>Preferred Location</label><input name="location" placeholder="e.g., Golf Course Ext"></div><div class="form-group"><label>Timeline</label><select name="timeline"><option>Immediate</option><option>3 months</option><option>6 months</option><option>1 year</option></select></div></div>
+                    <div class="form-row"><div class="form-group full-width"><label>Additional Message</label><textarea name="message" rows="2"></textarea></div></div>
+                    <div class="form-row"><div class="form-group"><label>Status</label><select name="status"><option value="new">New</option><option value="contacted">Contacted</option><option value="closed">Closed</option></select></div></div>
+                    <input type="hidden" name="source" value="admin_manual">
+                    <div class="modal-actions"><button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button><button type="submit" class="btn-primary">Save</button></div>
+                </form>
+            `;
+            const projectSelect = document.getElementById('leadProjectSelect');
+            const configSelect = document.getElementById('leadConfigSelect');
+            projectSelect.addEventListener('change', () => {
+                const proj = projectsData.find(p => p._id === projectSelect.value);
+                if (proj && proj.configurations) {
+                    configSelect.innerHTML = '<option value="">Select configuration</option>';
+                    proj.configurations.forEach(cfg => {
+                        configSelect.innerHTML += `<option value="${cfg.id || cfg.bedrooms}">${cfg.type || cfg.bedrooms+' BHK'}</option>`;
+                    });
+                } else configSelect.innerHTML = '<option value="">No configurations</option>';
+            });
+            document.getElementById('addForm').addEventListener('submit', submitLeadForm);
+        } 
+        else if (type === 'project') {
+            modalTitle.innerText = 'Add New Project';
+            modalContent.innerHTML = `
+                <form id="addForm">
+                    <div class="form-row"><div class="form-group"><label>Project Name *</label><input name="name" required></div><div class="form-group"><label>Slug (optional)</label><input name="slug" placeholder="auto-generated"></div></div>
+                    <div class="form-row"><div class="form-group"><label>Developer</label><input name="developer"></div><div class="form-group"><label>Live Status</label><select name="liveStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div>
+                    <div class="form-row"><div class="form-group"><label>Location Address</label><input name="address"></div><div class="form-group"><label>City</label><input name="city" value="Gurugram"></div></div>
+                    <div class="form-row"><div class="form-group"><label>Sector</label><input name="sector"></div></div>
+                    <div class="modal-actions"><button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button><button type="submit" class="btn-primary">Save</button></div>
+                </form>
+            `;
+            document.getElementById('addForm').addEventListener('submit', submitProjectForm);
+        } 
+        else if (type === 'property') {
+            modalTitle.innerText = 'Add New Property';
+            if (areasData.length === 0) fetchAreas().then(() => renderPropertyStep(1));
+            else renderPropertyStep(1);
+        }
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('addModal').style.display = 'none'; propertyFormState = { step: 1, data: {}, configs: [] }; uploadedFiles = []; }
+
+    // ==================== PROPERTY WIZARD ====================
+    let selectedProjectDetails = null;
+
+    function renderPropertyStep(step) {
+        propertyFormState.step = step;
+        const modalContent = document.getElementById('modalContent');
+        let html = `<div class="step-indicator">${[1,2,3].map(s => `<div class="step ${s===step ? 'active' : ''}" onclick="renderPropertyStep(${s})">Step ${s}</div>`).join('')}</div><form id="propertyForm">`;
+        
+        if (step === 1) {
+            html += `<div class="form-row"><div class="form-group"><label>Purpose *</label><select name="purpose" required><option value="">Select</option><option value="sell">Sell</option><option value="rent">Rent</option></select></div>
+                     <div class="form-group"><label>Property Type *</label><select name="propertyType" required><option value="">Select</option><option value="apartment">Apartment</option><option value="builderfloor">Builder Floor</option><option value="plot">Plot</option></select></div></div>`;
+        } 
+        else if (step === 2) {
+            const data = propertyFormState.data;
+            const isPlot = data.propertyType === 'plot';
+            const areaOptions = areasData.map(a => `<option value="${escapeHtml(a.name)}" ${data.area === a.name ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('');
+            html += `<div class="form-row"><div class="form-group"><label>Area / Location *</label><select name="area" id="propArea" required><option value="">Select area</option>${areaOptions}</select></div>
+                     <div class="form-group"><label>Project *</label><select name="projectId" id="propProject" required><option value="">Select area first</option></select></div></div>`;
+            if (!isPlot) {
+                html += `<div class="form-row"><div class="form-group"><label>Configuration</label><select name="configuration" id="propConfig"><option value="">Select configuration</option></select></div></div>
+                         <div class="form-row"><div class="form-group"><label>Bedrooms</label><input name="bedrooms" type="number" step="0.5" value="${data.bedrooms || ''}" readonly></div>
+                         <div class="form-group"><label>Bathrooms</label><input name="bathrooms" type="number" value="${data.bathrooms || ''}" readonly></div></div>
+                         <div class="form-row"><div class="form-group"><label>Balconies</label><input name="balconies" type="number" value="${data.balconies || ''}" readonly></div>
+                         <div class="form-group"><label>Size (sqft)</label><input name="size" type="number" required value="${data.size || ''}" readonly></div></div>
+                         <div class="form-row"><div class="form-group"><label>Furnishing</label><select name="furnishing"><option value="Unfurnished">Unfurnished</option><option value="Semi-furnished" selected>Semi-furnished</option><option value="Fully furnished">Fully furnished</option></select></div>
+                         <div class="form-group"><label>Covered Parking</label><input name="coveredParking" type="number" value="1"></div></div>
+                         <div class="form-row"><div class="form-group"><label>Open Parking</label><input name="openParking" type="number" value="0"></div>
+                         <div class="form-group"><label>Total Floors</label><input name="totalFloors" type="number" readonly></div></div>
+                         <div class="form-row"><div class="form-group"><label>Current Floor</label><input name="floor" type="number" placeholder="e.g., 3"></div></div>`;
+            } else {
+                html += `<div class="form-row"><div class="form-group"><label>Plot Area</label><input name="plotArea" type="number" step="any" placeholder="Area" required></div>
+                         <div class="form-group"><label>Area Unit</label><select name="plotUnit"><option value="sqft">sqft</option><option value="sqyd">sqyd</option></select></div></div>
+                         <div class="form-row"><div class="form-group"><label>Floors Allowed</label><input name="floorsAllowed" type="number"></div>
+                         <div class="form-group"><label>Boundary</label><select name="boundary"><option value="Yes">Yes</option><option value="No">No</option></select></div></div>
+                         <div class="form-row"><div class="form-group"><label>Open Sides</label><input name="openSides" type="number" value="3"></div>
+                         <div class="form-group"><label>Construction Done</label><select name="constructionDone"><option value="Yes">Yes</option><option value="No">No</option></select></div></div>
+                         <div class="form-row"><div class="form-group"><label>Age (years)</label><input name="age" type="number" step="0.5"></div></div>`;
+            }
+            if (data.purpose === 'sell') {
+                html += `<div class="form-row"><div class="form-group"><label>Availability Status</label><select name="availabilityStatus" required><option value="ready_to_move">Ready to move</option><option value="under_construction">Under construction</option></select></div>
+                         <div class="form-group"><label>Age (if ready)</label><input name="age" type="number" step="0.5" placeholder="years"></div></div>`;
+            } else if (data.purpose === 'rent') {
+                html += `<div class="form-row"><div class="form-group"><label>Available From</label><input type="date" name="availableFrom" required></div>
+                         <div class="form-group"><label>Age (years)</label><input name="age" type="number" step="0.5"></div></div>`;
+            }
+        } 
+        else if (step === 3) {
+            const data = propertyFormState.data;
+            const isSell = data.purpose === 'sell';
+            html += `<div class="form-group full-width"><label>Images (optional)</label>
+                     <div class="image-grid" id="imageGrid"></div>
+                     <button type="button" class="btn-secondary add-image-btn" onclick="addImages()">+ Add Images</button>
+                     <input type="file" id="hiddenFileInput" multiple accept="image/*" style="display:none" onchange="handleFileSelect(event)"></div>
+                     <div class="form-row"><div class="form-group"><label>${isSell ? 'Expected Price (₹)' : 'Expected Rent (₹/month)'} *</label><input name="expectedPrice" type="number" required step="any"></div>`;
+            if (isSell) {
+                html += `<div class="form-group"><label>Price per sqft</label><input name="pricePerSqft" readonly></div></div>`;
+                html += `<div class="form-row"><div class="form-group"><label>Negotiable?</label><select name="negotiable"><option value="No">No</option><option value="Yes">Yes</option></select></div>
+                         <div class="form-group"><label>Exact Price (if negotiable)</label><input name="exactPrice"></div></div>`;
+            } else {
+                html += `<div class="form-group"><label>Security Amount (₹)</label><input name="securityAmount" type="number" required></div></div>`;
+                html += `<div class="form-row"><div class="form-group"><label>Notice Period (months)</label><select name="noticePeriod"><option>1</option><option>2</option><option>3</option></select></div>
+                         <div class="form-group"><label>Rent Duration (months)</label><select name="rentDuration">${[...Array(24)].map((_,i) => `<option value="${i+1}">${i+1}</option>`).join('')}</select></div></div>`;
+                html += `<div class="form-row"><div class="form-group"><label>Negotiable?</label><select name="negotiable"><option value="No">No</option><option value="Yes">Yes</option></select></div></div>`;
+            }
+        }
+        html += `<div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                    ${step > 1 ? `<button type="button" class="btn-secondary" onclick="previousStep()">Back</button>` : ''}
+                    <button type="submit" class="btn-primary">${step===3 ? 'Save Property' : 'Next'}</button>
+                 </div></form>`;
+        modalContent.innerHTML = html;
+        if (step === 2) attachIntelligentEvents();
+        if (step === 3) refreshImageGrid();
+        document.getElementById('propertyForm')?.addEventListener('submit', handlePropertySubmit);
+    }
+
+    function previousStep() { renderPropertyStep(propertyFormState.step - 1); }
+
+    function attachIntelligentEvents() {
+        const areaSelect = document.getElementById('propArea');
+        const projectSelect = document.getElementById('propProject');
+        const configSelect = document.getElementById('propConfig');
+        let selectedProject = null;
+
+        areaSelect.addEventListener('change', () => {
+            const area = areaSelect.value;
+            if (!area) return;
+            const filtered = projectsData.filter(p => p.area === area);
+            projectSelect.innerHTML = '<option value="">Select project</option>';
+            filtered.forEach(p => {
+                projectSelect.innerHTML += `<option value="${p._id}">${escapeHtml(p.name)}</option>`;
+            });
+            configSelect.innerHTML = '<option value="">Select configuration</option>';
+            if (document.querySelector('input[name="bedrooms"]')) document.querySelector('input[name="bedrooms"]').value = '';
+            if (document.querySelector('input[name="bathrooms"]')) document.querySelector('input[name="bathrooms"]').value = '';
+            if (document.querySelector('input[name="balconies"]')) document.querySelector('input[name="balconies"]').value = '';
+            if (document.querySelector('input[name="size"]')) document.querySelector('input[name="size"]').value = '';
+            selectedProject = null;
+        });
+
+        projectSelect.addEventListener('change', () => {
+            const projectId = projectSelect.value;
+            if (!projectId) return;
+            selectedProject = projectsData.find(p => p._id === projectId);
+            if (selectedProject?.configurations) {
+                configSelect.innerHTML = '<option value="">Select configuration</option>';
+                selectedProject.configurations.forEach(cfg => {
+                    configSelect.innerHTML += `<option value="${cfg.id || cfg.bedrooms}">${cfg.type} (${cfg.bedrooms} BHK)</option>`;
+                });
+            } else {
+                configSelect.innerHTML = '<option value="">No configurations</option>';
+            }
+            const totalFloorsInput = document.querySelector('input[name="totalFloors"]');
+            if (totalFloorsInput && selectedProject?.totalFloors) totalFloorsInput.value = selectedProject.totalFloors;
+        });
+
+        configSelect.addEventListener('change', () => {
+            const configVal = configSelect.value;
+            if (!configVal || !selectedProject) return;
+            const selectedConfig = selectedProject.configurations.find(c => (c.id === configVal) || (c.bedrooms == configVal));
+            if (selectedConfig) {
+                if (document.querySelector('input[name="bedrooms"]')) document.querySelector('input[name="bedrooms"]').value = selectedConfig.bedrooms;
+                if (document.querySelector('input[name="bathrooms"]')) document.querySelector('input[name="bathrooms"]').value = selectedConfig.bathrooms;
+                if (document.querySelector('input[name="balconies"]')) document.querySelector('input[name="balconies"]').value = selectedConfig.balconies;
+                if (selectedConfig.sizes?.length && document.querySelector('input[name="size"]')) {
+                    document.querySelector('input[name="size"]').value = selectedConfig.sizes[0];
+                }
+            }
+        });
+    }
+
+    function addImages() { document.getElementById('hiddenFileInput').click(); }
+    function handleFileSelect(event) {
+        const files = Array.from(event.target.files);
+        uploadedFiles.push(...files);
+        refreshImageGrid();
+    }
+    function removeImage(index) {
+        uploadedFiles.splice(index, 1);
+        refreshImageGrid();
+    }
+    function refreshImageGrid() {
+        const grid = document.getElementById('imageGrid');
+        if (!grid) return;
+        if (uploadedFiles.length === 0) {
+            grid.innerHTML = '<p style="grid-column:span 2;">No images uploaded yet. Click "Add Images" to select.</p>';
+            return;
+        }
+        grid.innerHTML = '';
+        uploadedFiles.forEach((file, idx) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const div = document.createElement('div');
+                div.className = 'image-item';
+                div.innerHTML = `<img src="${e.target.result}" alt="preview"><button class="remove-img" onclick="removeImage(${idx})">×</button>`;
+                grid.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function handlePropertySubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        let step = propertyFormState.step;
+        if (step < 3) {
+            for (let [k, v] of formData.entries()) propertyFormState.data[k] = v;
+            renderPropertyStep(step + 1);
+            return;
+        }
+        for (let [k, v] of formData.entries()) propertyFormState.data[k] = v;
+        const data = propertyFormState.data;
+        const isSell = data.purpose === 'sell';
+        const isPlot = data.propertyType === 'plot';
+        const selectedProject = projectsData.find(p => p._id === data.projectId);
+        const projectName = selectedProject?.name || 'Property';
+        const bedrooms = data.bedrooms || '';
+        const titleSuffix = isPlot ? 'Plot' : `${bedrooms} BHK`;
+        const title = `${titleSuffix} in ${projectName}`;
+
+        let unitDetails = {};
+        if (!isPlot) {
+            unitDetails = {
+                bedrooms: parseFloat(data.bedrooms),
+                bathrooms: parseInt(data.bathrooms),
+                sqft: parseFloat(data.size),
+                floor: data.floor,
+                facing: data.facing,
+                furnishing: data.furnishing,
+                type: data.propertyType === 'apartment' ? 'resale' : 'floor',
+                price: data.expectedPrice,
+                priceValue: parseFloat(data.expectedPrice),
+            };
+        } else {
+            unitDetails = {
+                type: 'plot',
+                plotArea: parseFloat(data.plotArea),
+                plotUnit: data.plotUnit,
+                floorsAllowed: data.floorsAllowed,
+                boundary: data.boundary,
+                openSides: data.openSides,
+                constructionDone: data.constructionDone,
+                age: data.age || 0,
+                price: data.expectedPrice,
+                priceValue: parseFloat(data.expectedPrice),
+            };
+        }
+
+        const availability = {};
+        if (isSell) { availability.status = data.availabilityStatus; if (data.availabilityStatus === 'ready_to_move') availability.age = data.age; }
+        else { availability.status = 'ready_to_move'; availability.availableFrom = data.availableFrom; availability.age = data.age; }
+
+        const pricing = isSell ? { expectedPrice: parseFloat(data.expectedPrice), pricePerSqft: parseFloat(data.pricePerSqft) } : { expectedRent: parseFloat(data.expectedPrice), securityAmount: parseFloat(data.securityAmount), noticePeriod: data.noticePeriod, rentDuration: data.rentDuration };
+        const negotiation = data.negotiable === 'Yes' ? { isNegotiable: true, exactPrice: data.exactPrice } : { isNegotiable: false };
+        const slug = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${bedrooms}-${Date.now()}`;
+
+        const payload = {
+            title, slug, projectId: data.projectId, unitDetails, images: [], gatedInfo: { ...negotiation, availability: availability.status },
+            featured: false, liveStatus: 'active', purpose: data.purpose, propertyType: data.propertyType, area: data.area, location: { area: data.area }, availability, pricing,
+        };
+
+        const submitData = new FormData();
+        submitData.append('data', JSON.stringify(payload));
+        for (let file of uploadedFiles) submitData.append('images', file);
+
+        try {
+            const res = await fetch(`${API_BASE}/admin/properties`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: submitData });
+            if (!res.ok) throw new Error(await res.text());
+            showToast('Property added successfully');
+            closeModal();
+            await fetchProperties();
+            renderProperties();
+        } catch (err) { showToast(`Error: ${err.message}`, true); }
+    }
+
+    async function submitLeadForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const configId = formData.get('configId');
+        let bedrooms = '';
+        if (configId) {
+            const proj = projectsData.find(p => p._id === formData.get('projectId'));
+            const cfg = proj?.configurations?.find(c => (c.id === configId) || (c.bedrooms == configId));
+            if (cfg) bedrooms = cfg.bedrooms;
+        }
+        const requirementDetails = {
+            projectId: formData.get('projectId') || null,
+            purpose: formData.get('purpose'),
+            propertyType: formData.get('propertyType'),
+            bedrooms: bedrooms || formData.get('bedrooms'),
+            budget: formData.get('budget'),
+            location: formData.get('location'),
+            timeline: formData.get('timeline'),
+            message: formData.get('message'),
+        };
+        const payload = {
+            name: formData.get('name'),
+            email: formData.get('email') || '',
+            phone: formData.get('phone'),
+            source: 'admin_manual',
+            status: formData.get('status'),
+            requirementDetails,
+        };
+        try {
+            const res = await fetch(`${API_BASE}/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error(await res.text());
+            showToast('Lead added successfully');
+            closeModal();
+            await fetchLeads();
+            renderLeads();
+        } catch (err) { showToast(`Error: ${err.message}`, true); }
+    }
+
+    async function submitProjectForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const payload = {
+            name: formData.get('name'),
+            slug: formData.get('slug') || undefined,
+            developer: formData.get('developer'),
+            location: { address: formData.get('address'), city: formData.get('city'), sector: formData.get('sector') },
+            liveStatus: formData.get('liveStatus'),
+        };
+        try {
+            const res = await fetch(`${API_BASE}/admin/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error(await res.text());
+            showToast('Project added successfully');
+            closeModal();
+            await fetchProjects();
+            renderProjects();
+        } catch (err) { showToast(`Error: ${err.message}`, true); }
+    }
+
+    function clearLeadFilters() {
+        document.getElementById('leadSearch').value = '';
+        document.getElementById('leadStatus').value = '';
+        document.getElementById('leadSource').value = '';
+        document.getElementById('leadProjectFilter').value = '';
+        document.getElementById('leadConfigFilter').value = '';
+        renderLeads();
+    }
+    function clearProjectFilters() {
+        document.getElementById('projectSearch').value = '';
+        document.getElementById('projectStatus').value = '';
+        document.getElementById('projectSectorFilter').value = '';
+        document.getElementById('projectLocationFilter').value = '';
+        renderProjects();
+    }
+    function clearPropertyFilters() {
+        document.getElementById('propertySearch').value = '';
+        document.getElementById('propertyTypeFilter').value = '';
+        document.getElementById('propertyStatusFilter').value = '';
+        document.getElementById('propertyProjectFilter').value = '';
+        document.getElementById('propertySectorFilter').value = '';
+        document.getElementById('propertyConfigFilter').value = '';
+        renderProperties();
+    }
+
+    function logout() { localStorage.removeItem('adminToken'); location.reload(); }
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+</script>
+</body>
+</html>

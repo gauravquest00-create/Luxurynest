@@ -1,0 +1,730 @@
+
+/* model.js */
+/* ============================================================
+   COMPLETE CSS FOR model.js (Lead, Project, Property Forms)
+   Responsive, no overflow, premium look
+   ============================================================ */
+
+/* ----- MODAL OVERLAY & CONTAINER ----- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+}
+
+.modal-content {
+    background: white;
+    width: 90%;
+    max-width: 800px;
+    max-height: 85vh;
+    border-radius: 28px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.5rem;
+    box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15);
+}
+
+/* ----- FORM GRID & LAYOUT (Lead, Property Step) ----- */
+.form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.form-group label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #5A6E7F;
+    margin-bottom: 0.25rem;
+}
+
+/* Inputs, selects, textareas */
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #CBD5E1;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    background: white;
+    transition: 0.2s;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #C6A43F;
+    box-shadow: 0 0 0 3px rgba(198, 164, 63, 0.1);
+}
+
+/* ----- STEP INDICATOR (Property Wizard) ----- */
+.step-indicator {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #E9EEF3;
+    padding-bottom: 1rem;
+    flex-wrap: wrap;
+}
+/* ============================================================
+   PROPERTY WIZARD – 2 COLUMN LAYOUT FOR DESKTOP
+   ============================================================ */
+
+/* For step 2 and step 3 forms */
+#propertyStep2Form,
+#propertyStep3Form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    width: 100%;
+}
+
+/* Make form-row elements use grid on desktop */
+#propertyStep2Form .form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+/* Form-group inside step 2 and step 3 */
+#propertyStep2Form .form-group,
+#propertyStep3Form .form-group {
+    width: 100%;
+}
+
+/* APARTMENT specific layout – 2 columns on desktop */
+@media (min-width: 768px) {
+    #propertyStep2Form,
+    #propertyStep3Form {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.2rem;
+    }
+    
+    /* Full width elements should span both columns */
+    #propertyStep2Form .full-width,
+    #propertyStep3Form .full-width,
+    #apartmentSizeContainer,
+    .image-grid,
+    .modal-actions {
+        grid-column: span 2;
+    }
+    
+    /* Form-row within step 2 becomes 2 columns */
+    #propertyStep2Form .form-row {
+        grid-column: span 2;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    /* Modal actions buttons stay inline */
+    .modal-actions {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+    }
+}
+
+/* For builder floor and plot forms */
+@media (min-width: 768px) {
+    #propertyStep2Form .form-row {
+        grid-column: span 2;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+}
+.step {
+    flex: 1;
+    text-align: center;
+    padding: 0.6rem 0.5rem;
+    background: #F1F5F9;
+    border-radius: 60px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #5A6E7F;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+
+.step.active {
+    background: #C6A43F;
+    color: white;
+    box-shadow: 0 4px 12px rgba(198, 164, 63, 0.3);
+}
+
+/* ----- IMAGE GRID (Property & Project) ----- */
+.image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    background: #F8FAFC;
+    padding: 1rem;
+    border-radius: 24px;
+    margin: 1rem 0;
+}
+
+.image-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #E2E8F0;
+    background: white;
+    transition: transform 0.2s;
+}
+
+.image-item:hover {
+    transform: scale(1.02);
+}
+
+.image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-img {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #EF4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+/* ----- MODAL ACTIONS (Buttons) ----- */
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    justify-content: flex-end;
+}
+
+.modal-actions .btn-secondary {
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    padding: 0.5rem 1rem;
+    border-radius: 40px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.modal-actions .btn-primary {
+    background: #C6A43F;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 40px;
+    cursor: pointer;
+    color: #0F172A;
+    font-weight: 600;
+}
+
+/* ============================================================
+   PROJECT ADD FORM (PAF) – UNIQUE CLASSES
+   ============================================================ */
+.paf-modal-body {
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.paf-form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.paf-full-width {
+    width: 100%;
+    padding: 0 16px;
+    box-sizing: border-box;
+}
+
+.paf-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.paf-label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #475569;
+}
+
+.paf-input, .paf-select {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
+    background: white;
+    box-sizing: border-box;
+}
+
+.paf-input:focus, .paf-select:focus {
+    border-color: #C6A43F;
+    outline: none;
+}
+
+/* Configurations block */
+.paf-config-block {
+    background: #F8FAFC;
+    border-radius: 24px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #E2E8F0;
+}
+
+.paf-form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.paf-size-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.paf-size-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #E0F2FE;
+    padding: 4px 10px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    color: #0369A1;
+}
+
+.paf-size-tag button.remove-size {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ef4444;
+}
+
+.paf-add-size-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+/* List items (connectivity, landmarks, USP) */
+.paf-list-item {
+    background: #F8FAFC;
+    border-radius: 20px;
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid #E2E8F0;
+}
+
+/* Amenities chips */
+.paf-amenity-option {
+    display: inline-block;
+    background: #e2e8f0;
+    padding: 5px 14px;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: 0.2s;
+    margin: 4px;
+}
+
+.paf-amenity-option.selected {
+    background: #3b82f6;
+    color: white;
+}
+
+.paf-selected-chip {
+    background: #3b82f6;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px;
+}
+
+.paf-selected-chip button.remove-usp {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+/* Image grid (project) */
+#projectImageGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.paf-image-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #E2E8F0;
+}
+
+.paf-remove-img {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+}
+
+/* Buttons within project form */
+.paf-btn-small, .paf-btn-primary, .paf-btn-secondary {
+    border-radius: 40px;
+    padding: 6px 12px;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+}
+
+.paf-btn-small {
+    background: #EFF6FF;
+    color: #2563EB;
+    border: 1px solid #BFDBFE;
+}
+
+.paf-btn-primary {
+    background: #C6A43F;
+    color: #0F172A;
+}
+
+.paf-btn-secondary {
+    background: #F1F5F9;
+    color: #1E293B;
+    border: 1px solid #CBD5E1;
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS (MOBILE FIRST)
+   ============================================================ */
+
+/* Tablet and up (min-width: 640px) */
+@media (min-width: 640px) {
+    .form-row {
+        flex-direction: row;
+        gap: 1rem;
+    }
+    .form-row .form-group {
+        flex: 1;
+    }
+    .form-grid {
+        gap: 1.2rem;
+    }
+    .paf-form-row {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .paf-form-row .paf-form-group {
+        flex: 1;
+        min-width: 140px;
+    }
+    .modal-content {
+        width: 85%;
+        padding: 2rem;
+    }
+}
+
+/* Desktop (min-width: 768px) */
+@media (min-width: 768px) {
+    .modal-content {
+        max-width: 800px;
+    }
+    .paf-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0 20px;
+    }
+    .paf-full-width {
+        grid-column: span 2;
+    }
+    .paf-form-group {
+        padding: 0;
+    }
+}
+
+/* Mobile (max-width: 640px) : force everything to stack, prevent overflow */
+@media (max-width: 640px) {
+    .modal-content {
+        width: 95%;
+        padding: 1rem;
+        max-height: 90vh;
+    }
+    .step-indicator {
+        gap: 0.4rem;
+    }
+    .step {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.2rem;
+        white-space: normal;
+        word-break: keep-all;
+    }
+    .form-group input, 
+    .form-group select, 
+    .form-group textarea {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+    .modal-actions {
+        flex-direction: column;
+    }
+    .modal-actions button {
+        width: 100%;
+    }
+    .image-grid {
+        gap: 0.5rem;
+    }
+    .image-item {
+        width: 70px;
+        height: 70px;
+    }
+    .paf-form-group, .paf-full-width {
+        padding: 0 8px;
+    }
+    .paf-config-block {
+        padding: 0.75rem;
+    }
+    .paf-size-tag {
+        font-size: 0.7rem;
+    }
+}
+
+/* Ensure no horizontal overflow anywhere */
+body, .app, .main-content, .page-content, #pageContent, .modal-content, .paf-modal-body {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+/* ============================================================
+   CUSTOM DROPDOWN STYLES (Project, Purpose, Timeline, Status)
+   ============================================================ */
+
+/* Custom dropdown wrapper */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* Custom dropdown trigger (looks like select) */
+.custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #CBD5E1;
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.custom-select-trigger:hover {
+    border-color: #C6A43F;
+}
+
+/* Selected value text */
+.custom-select-trigger .selected-value {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Chevron icon */
+.custom-select-trigger i {
+    color: #64748B;
+    transition: transform 0.2s;
+}
+
+/* Dropdown options list */
+.custom-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #CBD5E1;
+    border-radius: 16px;
+    margin-top: 4px;
+    padding: 0;
+    list-style: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 9999;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Open state */
+.custom-options.open {
+    display: block;
+}
+
+/* Options list items */
+.custom-options li {
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.custom-options li:hover {
+    background: #F1F5F9;
+    color: #C6A43F;
+}
+
+/* ============================================================
+   MODAL FIX – Allow dropdown to overflow
+   ============================================================ */
+.modal-content {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+#modalBody {
+    overflow: visible !important;
+}
+
+/* ============================================================
+   RESPONSIVE – Mobile
+   ============================================================ */
+@media (max-width: 640px) {
+    .custom-select-trigger {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .custom-options li {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        white-space: normal;
+        word-break: break-word;
+    }
+    
+    .custom-options {
+        max-height: 180px;
+    }
+}
+
+/* ============================================================
+   PREVENT OVERFLOW
+   ============================================================ */
+.custom-select-wrapper,
+.custom-options {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* ============================================================
+   FIX: DATE PICKER UI (Calendar) – Make it look like normal input
+   ============================================================ */
+
+/* Style date input like other form fields */
+input[type="date"] {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #CBD5E1;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: white;
+    box-sizing: border-box;
+    transition: all 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Focus state */
+input[type="date"]:focus {
+    outline: none;
+    border-color: #C6A43F;
+    box-shadow: 0 0 0 3px rgba(198, 164, 63, 0.1);
+}
+
+/* Custom calendar icon (optional) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    background: transparent;
+    color: #64748B;
+    cursor: pointer;
+    padding: 4px;
+}
+
+/* Mobile: adjust font size */
+@media (max-width: 640px) {
+    input[type="date"] {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+}
+
+/* Fallback for browsers that don't support date picker styling */
+input[type="date"]:invalid {
+    color: #94A3B8;
+}

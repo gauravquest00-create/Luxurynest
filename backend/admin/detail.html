@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>LuxuryNest Admin – Item Details</title>
+    <link rel="icon" type="image/png" href="./logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/detailPage.css">
+    
+
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar" id="sidebar">
+    <div class="logo">
+        <img src="/luxuryadmin/logo.png" alt="LuxuryNest" class="logo-img">
+        <h2>LuxuryNest</h2>
+        <button id="sidebarCollapseBtn" class="sidebar-collapse-btn" aria-label="Toggle Sidebar">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+    <nav class="nav">
+        <a href="/luxuryadmin/#dashboard" class="nav-link" data-page="dashboard">
+            <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+        </a>
+        <a href="/luxuryadmin/#leads" class="nav-link" data-page="leads">
+            <i class="fas fa-users"></i> <span>Leads</span>
+        </a>
+        <a href="/luxuryadmin/#projects" class="nav-link" data-page="projects">
+            <i class="fas fa-building"></i> <span>Projects</span>
+        </a>
+        <a href="/luxuryadmin/#properties" class="nav-link" data-page="properties">
+            <i class="fas fa-home"></i> <span>Properties</span>
+        </a>
+        <a href="/luxuryadmin/#areas" class="nav-link" data-page="areas">
+            <i class="fas fa-map-marker-alt"></i> <span>Areas</span>
+        </a>
+        <a href="/luxuryadmin/#notifications" class="nav-link" data-page="notifications">
+            <i class="fas fa-bell"></i> <span>Notifications</span>
+        </a>
+        <a href="/luxuryadmin/#profile" class="nav-link" data-page="profile">
+            <i class="fas fa-user-circle"></i> <span>Profile</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <button id="logoutBtn" class="logout-btn"></button>
+    </div>
+</aside>
+   <main class="main-content" id="mainContent" style="overflow: visible; position: relative;">
+            <header class="top-bar" style="position: sticky; top: 0; z-index: 99; background: white;">
+            <div class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></div>
+            <div class="search-area"></div>
+           <div class="admin-actions">
+    <div class="admin-profile" onclick="window.location.href='/luxuryadmin/#profile'">
+        <i class="fas fa-user-circle"></i> 
+        <span id="adminName"></span>
+    </div>
+</div>
+        </header>
+
+        <div class="page-content"><div id="detailContent" class="detail-container"><div class="loading">Loading item details...</div></div></div>
+    </main>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+    // ========== GLOBALS ==========
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get('type');
+    const id = urlParams.get('id');
+    const API_BASE = window.location.origin + '/api';
+    let token = localStorage.getItem('adminToken');
+    let originalData = null;
+    if (!token) window.location.href = '/luxuryadmin';
+
+    // Helper functions
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+    function formatPrice(price) { if (!price) return '—'; const num = Number(price); if(isNaN(num)) return '—'; if(num>=1e7) return `₹${(num/1e7).toFixed(2)} Cr`; if(num>=1e5) return `₹${(num/1e5).toFixed(2)} L`; return `₹${num.toLocaleString()}`; }
+    function formatKey(key) { return String(key).replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).replace(/_/g, ' '); }
+    function safeStringify(val) { if(val===undefined||val===null) return '—'; if(typeof val==='object') return JSON.stringify(val); return String(val); }
+    function showToast(msg, isError) { const toast=document.createElement('div'); toast.className='toast'; toast.style.cssText='position:fixed;bottom:20px;right:20px;background:'+(isError?'#dc3545':'#1E2A3A')+';color:white;padding:12px 24px;border-radius:40px;z-index:9999;'; toast.innerText=msg; document.body.appendChild(toast); setTimeout(()=>toast.remove(),3000); }
+    function getImageUrl(path) { if(!path) return '/placeholder-image.jpg'; if(path.startsWith('http')) return path; const normalized = path.startsWith('/') ? path : `/${path}`; return `${API_BASE.replace('/api','')}${normalized}`; }
+
+    // Fetch item
+    async function fetchItem() {
+        let endpoint = '';
+        if (type === 'lead') endpoint = `${API_BASE}/leads/${id}`;
+        else if (type === 'project') endpoint = `${API_BASE}/admin/projects/${id}`;
+        else if (type === 'property') endpoint = `${API_BASE}/admin/properties/${id}`;
+        else if (type === 'area') endpoint = `${API_BASE}/areas/${id}`;
+        else throw new Error('Invalid type');
+        const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.status === 401) { localStorage.removeItem('adminToken'); window.location.href='/luxuryadmin'; return null; }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    }
+
+    // ========== LEAD, PROJECT, PROPERTY VIEWS (unchanged) ==========
+    async function renderLeadView(lead) {
+        const req = lead.requirementDetails || {};
+        let linkedHtml = '';
+        if (lead.propertySlug) {
+            try {
+                const propRes = await fetch(`${API_BASE}/properties/${lead.propertySlug}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (propRes.ok) {
+                    const data = await propRes.json();
+                    const prop = data.property;
+                    const proj = data.project;
+                    linkedHtml = `<div class="section-card"><div class="section-title">Linked Property</div><div class="info-grid">
+                        <div class="info-item"><span class="info-label">Title</span><span class="info-value">${escapeHtml(prop.title)}</span></div>
+                        <div class="info-item"><span class="info-label">Project</span><span class="info-value">${escapeHtml(proj?.name||'-')}</span></div>
+                        <div class-><span class="info-label">Price</span><span class="info-value">${formatPrice(prop.unitDetails?.price)}</span></div>
+                        <div class="info-item"><span class="info-label">Bedrooms</span><span class="info-value">${prop.unitDetails?.bedrooms||'-'}</span></div>
+                        <div class="info-item"><span class="info-label">Bathrooms</span><span class="info-value">${prop.unitDetails?.bathrooms||'-'}</span></div>
+                        <div class="info-item"><span class="info-label">Size</span><span class="info-value">${prop.unitDetails?.sqft||'-'} sqft</span></div>
+                        ${prop.images?.length?`<div class="full-width image-gallery">${prop.images.map(img=>`<img src="${img}" class="admin-thumbnail" onclick="window.open('${img}','_blank')">`).join('')}</div>`:''}
+                    </div></div>`;
+                } else linkedHtml = `<div class="section-card"><p>Linked property not found</p></div>`;
+            } catch(e) { linkedHtml = `<div class="section-card"><p>Error loading linked property</p></div>`; }
+        }
+        return `
+            <div class="section-card"><div class="section-title">Client Information</div><div class="info-grid">
+                <div class="info-item"><span class="info-label">Name</span><span class="info-value">${escapeHtml(lead.name)}</span></div>
+                <div class="info-item"><span class="info-label">Email</span><span class="info-value">${escapeHtml(lead.email)}</span></div>
+                <div class="info-item"><span class="info-label">Phone</span><span class="info-value">${escapeHtml(lead.phone)}</span></div>
+                <div class="info-item"><span class="info-label">Source</span><span class="info-value">${escapeHtml(lead.source)}</span></div>
+                <div class="info-item"><span class="info-label">Status</span><span class="info-value"><span class="badge">${escapeHtml(lead.status)}</span></span></div>
+                <div class="info-item"><span class->Created</span><span class="info-value">${new Date(lead.createdAt).toLocaleString()}</span></div>
+            </div></div>
+            <div class="section-card"><div class="section-title">Requirement Details</div><div class="info-grid">${Object.entries(req).map(([k,v])=>`<div class="info-item"><span class="info-label">${escapeHtml(formatKey(k))}</span><span class="info-value">${escapeHtml(safeStringify(v))}</span></div>`).join('')}</div></div>
+            ${linkedHtml}
+        `;
+    }
+
+    async function renderProjectView(project) {
+        const connectivity = project.connectivity || [];
+        const landmarks = project.landmarks || [];
+        const configs = project.configurations || [];
+        const amenities = project.amenities || {};
+        const usp = project.features?.usp || [];
+        const devName = typeof project.developer === 'object' ? project.developer?.name : project.developer;
+        let propsHtml = '<p>No properties found.</p>';
+        try {
+            const propsRes = await fetch(`${API_BASE}/admin/properties?projectId=${project._id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (propsRes.ok) {
+                const props = await propsRes.json();
+                if (props.length) {
+                    propsHtml = '<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem;">';
+                    props.forEach(p => {
+                        const img = p.images?.[0] || 'https://via.placeholder.com/150';
+                        propsHtml += `<a href="/luxuryadmin/detail.html?type=property&id=${p._id}" class="property-card-link">
+                            <img src="${img}" style="width:100%; height:120px; object-fit:cover;">
+                            <div style="padding:0.5rem;"><strong>${escapeHtml(p.title)}</strong><br/>${p.unitDetails?.bedrooms||''} BHK · ${p.unitDetails?.sqft||''} sqft<br/>${formatPrice(p.unitDetails?.price)}</div>
+                        </a>`;
+                    });
+                    propsHtml += '</div>';
+                }
+            }
+        } catch(e) { console.warn(e); }
+        return `
+            <div class="section-card"><div class="section-title">Basic Info</div><div class="info-grid">
+                <div class="info-item"><span class="info-label">Name</span><span class="info-value">${escapeHtml(project.name)}</span></div>
+                <div class="info-item"><span class="info-label">Slug</span><span class="info-value">${escapeHtml(project.slug)}</span></div>
+                <div class="info-item"><span class="info-label">Developer</span><span class="info-value">${escapeHtml(devName||'-')}</span></div>
+                <div class="info-item"><span class="info-label">Status</span><span class="info-value"><span class="badge">${escapeHtml(project.liveStatus)}</span></span></div>
+                <div class="info-item"><span class="info-label">Area</span><span class="info-value">${escapeHtml(project.area||'-')}</span></div>
+            </div></div>
+            <div class="section-card"><div class="section-title">Location</div><div class="info-grid">
+                <div class="info-item"><span class="info-label">Address</span><span class->${escapeHtml(project.location?.address||'-')}</span></div>
+                <div class="info-item"><span class="info-label">Sector</span><span class="info-value">${escapeHtml(project.location?.sector||'-')}</span></div>
+                <div class="info-item"><span class="info-label">City</span><span class="info-value">${escapeHtml(project.location?.city||'-')}</span></div>
+                <div class="info-item"><span class="info-label">State</span><span class="info-value">${escapeHtml(project.location?.state||'-')}</span></div>
+            </div></div>
+            ${project.pricingMeta?`<div class="section-card"><div class="section-title">Pricing</div><div class="info-grid">
+                <div class="info-item"><span class="info-label">Min Price</span><span class="info-value">${formatPrice(project.pricingMeta.minPrice)}</span></div>
+                <div class="info-item"><span class="info-label">Max Price</span><span class="info-value">${formatPrice(project.pricingMeta.maxPrice)}</span></div>
+                <div class="info-item"><span class="info-label">Price/sqft</span><span class="info-value">${project.pricingMeta.pricePerSqft?'₹'+project.pricingMeta.pricePerSqft:'-'}</span></div>
+            </div></div>`:''}
+            <div class="section-card"><div class="section-title">Configurations</div><div class="info-grid">${configs.length?configs.map(c=>`<div class="config-card"><h4>${escapeHtml(c.type)}</h4><div>Bedrooms: ${c.bedrooms}</div><div>Bathrooms: ${c.bathrooms}</div><div>Balconies: ${c.balconies}</div><div>Sizes: ${c.sizes?.join(', ')||'-'}</div></div>`).join(''):'<p>No configs</p>'}</div></div>
+            <div class-><div class="section-title">Connectivity</div><div class="badge-list">${connectivity.map(c=>`<span class="badge">${escapeHtml(c.name)} (${c.distance})</span>`).join('')||'—'}</div></div>
+            <div class="section-card"><div class="section-title">Landmarks</div><div class="badge-list">${landmarks.map(l=>`<span class="badge">${escapeHtml(l.name)} (${l.distance})</span>`).join('')||'—'}</div></div>
+            <div class="section-card"><div class="section-title">Amenities</div>${Object.keys(amenities).length?Object.entries(amenities).map(([g,list])=>`<div><strong>${escapeHtml(g).toUpperCase()}</strong><div class="badge-list">${list.map(a=>`<span class="badge">${escapeHtml(a)}</span>`).join('')}</div></div>`).join(''):'<p>No amenities</p>'}</div>
+            <div class="section-card"><div class="section-title">USP</div><div class="badge-list">${usp.map(u=>`<span class="badge">✨ ${escapeHtml(u)}</span>`).join('')||'—'}</div></div>
+            <div class="section-card"><div class="section-title">Properties in Project</div>${propsHtml}</div>
+        `;
+    }
+
+    function renderPropertyView(prop) {
+        const unit = prop.unitDetails || {};
+        const gated = prop.gatedInfo || {};
+        return `
+            <div class="section-card"><div class="section-title">Property Details</div><div class="info-grid">
+                <div class="info-item"><span class="info-label">Title</span><span class="info-value">${escapeHtml(prop.title)}</span></div>
+                <div class="info-item"><span class="info-label">Slug</span><span class="info-value">${escapeHtml(prop.slug)}</span></div>
+                <div class="info-item"><span class="info-label">Project</span><span class="info-value">${escapeHtml(prop.projectId?.name || '-')}</span></div>
+                <div class="info-item"><span class="info-label">Live Status</span><span class="info-value"><span class="badge">${escapeHtml(prop.liveStatus)}</span></span></div>
+                <div class="info-item"><span class="info-label">Featured</span><span class="info-value">${prop.featured ? 'Yes' : 'No'}</span></div>
+            </div></div>
+            <div class="section-card"><div class="section-title">Unit Details</div><div class="info-grid">
+                ${Object.entries(unit).map(([k,v]) => `<div class="info-item"><span class="info-label">${escapeHtml(formatKey(k))}</span><span class="info-value">${escapeHtml(String(v))}</span></div>`).join('')}
+            </div></div>
+            <div class="section-card"><div class="section-title">Gated Information</div><div class->${Object.entries(gated).map(([k,v]) => `<div class="info-item"><span class="info-label">${escapeHtml(formatKey(k))}</span><span class="info-value">${escapeHtml(String(v))}</span></div>`).join('')}</div></div>
+            ${prop.images?.length ? `<div class="section-card"><div class="section-title">Images</div><div class="image-gallery">${prop.images.map(img => `<img src="${escapeHtml(img)}" class="admin-thumbnail" onclick="window.open('${escapeHtml(img)}','_blank')">`).join('')}</div></div>` : ''}
+        `;
+    }
+
+    // ========== AREA VIEW (read-only) ==========
+    function renderAreaView(area) {
+        const connectivity = area.connectivity || [];
+        const ak = area.areaKnowledge || {};
+        const usp = area.areaUsp || [];
+        const market = area.marketAnalysis || [];
+        const price = area.priceInsight || {};
+        const why = area.whyBestFor || {};
+        return `
+            <div class="section-card"><div class="section-title">Basic Information</div><div class="info-grid">
+                <div class="info-item"><span class="info-label">Name</span><span class="info-value">${escapeHtml(area.name)}</span></div>
+                <div class="info-item"><span class="info-label">Slug</span><span class="info-value">${escapeHtml(area.slug)}</span></div>
+                <div class="info-item"><span class="info-label">City</span><span class="info-value">${escapeHtml(area.city)}</span></div>
+                <div class="info-item"><span class="info-label">State</span><span class="info-value">${escapeHtml(area.state)}</span></div>
+                <div class="info-item"><span class="info-label">Micro Markets</span><span class="info-value">${area.microMarkets?.map(m=>`<span class="badge">${escapeHtml(m)}</span>`).join(' ')||'—'}</span></div>
+                <div class="info-item"><span class="info-label">Tags</span><span class="info-value">${area.tags?.map(t=>`<span class="badge">${escapeHtml(t)}</span>`).join(' ')||'—'}</span></div>
+            </div></div>
+            ${connectivity.length?`<div class="section-card"><div class="section-title">Connectivity</div><ul>${connectivity.map(c=>`<li>${escapeHtml(c)}</li>`).join('')}</ul></div>`:''}
+            ${ak.vibe||ak.socialInfra||ak.convenience?`<div class="section-card"><div class="section-title">Area Knowledge</div><div class="info-grid"><div class="info-item"><span class="info-label">Vibe</span><span class="info-value">${escapeHtml(ak.vibe)}</span></div><div class="info-item"><span class="info-label">Social Infrastructure</span><span class="info-value">${escapeHtml(ak.socialInfra)}</span></div><div class="info-item"><span class="info-label">Convenience</span><span class="info-value">${escapeHtml(ak.convenience)}</span></div></div></div>`:''}
+            ${usp.length?`<div class-section-card"><div class="section-title">Unique Selling Points</div><ul>${usp.map(u=>`<li>${escapeHtml(u)}</li>`).join('')}</ul></div>`:''}
+            ${market.length?`<div class="section-card"><div class="section-title">Market Analysis</div><ul>${market.map(m=>`<li>${escapeHtml(m)}</li>`).join('')}</ul></div>`:''}
+            ${price.averageRate||price.rentalRange?`<div class="section-card"><div class="section-title">Price Insight</div><div class="info-grid"><div class="info-item"><span class="info-label">Average Rate</span><span class="info-value">${escapeHtml(price.averageRate)}</span></div><div class="info-item"><span class="info-label">Rental Range</span><span class="info-value">${escapeHtml(price.rentalRange)}</span></div><div class="info-item"><span class="info-label">Appreciation</span><span class="info-value">${escapeHtml(price.appreciationPotential)}</span></div></div></div>`:''}
+            ${why.endUser?.length||why.investment?.length?`<div class="section-card"><div class="section-title">Why Best For</div>${why.endUser?.length?`<h4>End User</h4><ul>${why.endUser.map(e=>`<li>${escapeHtml(e)}</li>`).join('')}</ul>`:''}${why.investment?.length?`<h4>Investment</h4><ul>${why.investment.map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul>`:''}</div>`:''}
+        `;
+    }
+
+    // ========== AREA EDIT MODE ==========
+    let areaEditMode = false;
+    let areaOriginalData = null;
+    let areaEditData = null;
+
+    function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+    function renderAreaEditForm(area) {
+        const connectivity = area.connectivity || [];
+        const ak = area.areaKnowledge || {};
+        const usp = area.areaUsp || [];
+        const market = area.marketAnalysis || [];
+        const why = area.whyBestFor || {};
+        const microMarkets = area.microMarkets || [];
+        const tags = area.tags || [];
+        const price = area.priceInsight || {};
+
+        const buildEditableList = (title, listKey, items) => `
+            <div class="section-card">
+                <div class="section-title">${title}</div>
+                <div class="dynamic-list" data-list="${listKey}">
+                    ${items.map((item, idx) => `
+                        <div class="list-item" data-index="${idx}">
+                            <input type="text" class="list-input" data-key="${listKey}" data-index="${idx}" value="${escapeHtml(item)}">
+                            <button type="button" class="remove-item-btn" data-key="${listKey}" data-index="${idx}">✖</button>
+                        </div>
+                    `).join('')}
+                    <button type="button" class="add-item-btn" data-key="${listKey}">+ Add</button>
+                </div>
+            </div>
+        `;
+        const objectEditor = (title, obj) => `
+            <div class="section-card">
+                <div class="section-title">${title}</div>
+                <div class="form-grid">
+                    <div class="form-group"><label>Vibe</label><input type="text" id="ak_vibe" value="${escapeHtml(obj.vibe || '')}"></div>
+                    <div class="form-group"><label>Social Infrastructure</label><input type="text" id="ak_socialInfra" value="${escapeHtml(obj.socialInfra || '')}"></div>
+                    <div class="form-group"><label>Convenience</label><input type="text" id="ak_convenience" value="${escapeHtml(obj.convenience || '')}"></div>
+                </div>
+            </div>
+        `;
+        const priceEditor = (p) => `
+            <div class="section-card">
+                <div class="section-title">Price Insight</div>
+                <div class="form-grid">
+                    <div class="form-group"><label>Average Rate</label><input type="text" id="pi_averageRate" value="${escapeHtml(p.averageRate || '')}"></div>
+                    <div class="form-group"><label>Rental Range</label><input type="text" id="pi_rentalRange" value="${escapeHtml(p.rentalRange || '')}"></div>
+                    <div class="form-group"><label>Appreciation</label><input type="text" id="pi_appreciationPotential" value="${escapeHtml(p.appreciationPotential || '')}"></div>
+                </div>
+            </div>
+        `;
+
+        return `
+            <div class="section-card"><div class="section-title">Basic Information (read-only)</div><div class="info-grid">
+                <div class="info-item"><span class="info-label">Name</span><div>${escapeHtml(area.name)}</div></div>
+                <div class="info-item"><span class="info-label">Slug</span><div>${escapeHtml(area.slug)}</div></div>
+                <div class="info-item"><span class="info-label">City</span><div>${escapeHtml(area.city)}</div></div>
+                <div class="info-item"><span class="info-label">State</span><div>${escapeHtml(area.state)}</div></div>
+            </div></div>
+            ${buildEditableList('Micro Markets', 'microMarkets', microMarkets)}
+            ${buildEditableList('Tags', 'tags', tags)}
+            ${buildEditableList('Connectivity', 'connectivity', connectivity)}
+            ${buildEditableList('Unique Selling Points', 'areaUsp', usp)}
+            ${buildEditableList('Market Analysis', 'marketAnalysis', market)}
+            ${objectEditor('Area Knowledge', ak)}
+            <div class="section-card"><div class="section-title">Why Best For</div>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>End User</label>
+                        <div class="dynamic-list" data-list="whyBestFor_endUser">
+                            ${(why.endUser || []).map((item, idx) => `
+                                <div class="list-item" data-index="${idx}">
+                                    <input type="text" class="list-input" data-key="whyBestFor_endUser" data-index="${idx}" value="${escapeHtml(item)}">
+                                    <button type="button" class="remove-item-btn" data-key="whyBestFor_endUser" data-index="${idx}">✖</button>
+                                </div>
+                            `).join('')}
+                            <button type="button" class="add-item-btn" data-key="whyBestFor_endUser">+ Add</button>
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Investment</label>
+                        <div class="dynamic-list" data-list="whyBestFor_investment">
+                            ${(why.investment || []).map((item, idx) => `
+                                <div class="list-item" data-index="${idx}">
+                                    <input type="text" class="list-input" data-key="whyBestFor_investment" data-index="${idx}" value="${escapeHtml(item)}">
+                                    <button type="button" class="remove-item-btn" data-key="whyBestFor_investment" data-index="${idx}">✖</button>
+                                </div>
+                            `).join('')}
+                            <button type="button" class="add-item-btn" data-key="whyBestFor_investment">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            ${priceEditor(price)}
+        `;
+    }
+
+    function attachDynamicListHandlers() {
+        document.querySelectorAll('.add-item-btn').forEach(btn => {
+            btn.removeEventListener('click', handleAddItem);
+            btn.addEventListener('click', handleAddItem);
+        });
+        document.querySelectorAll('.remove-item-btn').forEach(btn => {
+            btn.removeEventListener('click', handleRemoveItem);
+            btn.addEventListener('click', handleRemoveItem);
+        });
+        document.querySelectorAll('.list-input').forEach(inp => {
+            inp.removeEventListener('change', handleListInputChange);
+            inp.addEventListener('change', handleListInputChange);
+        });
+    }
+
+    function handleAddItem(e) {
+        const key = e.currentTarget.dataset.key;
+        const container = e.currentTarget.parentElement;
+        const newIndex = container.querySelectorAll('.list-item').length;
+        const newDiv = document.createElement('div');
+        newDiv.className = 'list-item';
+        newDiv.setAttribute('data-index', newIndex);
+        newDiv.innerHTML = `
+            <input type="text" class="list-input" data-key="${key}" data-index="${newIndex}" value="">
+            <button type="button" class="remove-item-btn" data-key="${key}" data-index="${newIndex}">✖</button>
+        `;
+        container.insertBefore(newDiv, e.currentTarget);
+        const path = key.split('_');
+        let target = areaEditData;
+        for (let i = 0; i < path.length - 1; i++) target = target[path[i]];
+        const arrayKey = path[path.length - 1];
+        if (!target[arrayKey]) target[arrayKey] = [];
+        target[arrayKey].push('');
+        newDiv.querySelector('.list-input').addEventListener('change', handleListInputChange);
+        newDiv.querySelector('.remove-item-btn').addEventListener('click', handleRemoveItem);
+    }
+
+    function handleRemoveItem(e) {
+        const key = e.currentTarget.dataset.key;
+        const idx = parseInt(e.currentTarget.dataset.index);
+        const listItem = e.currentTarget.parentElement;
+        listItem.remove();
+        const path = key.split('_');
+        let target = areaEditData;
+        for (let i = 0; i < path.length - 1; i++) target = target[path[i]];
+        const arrayKey = path[path.length - 1];
+        if (target[arrayKey] && target[arrayKey].length > idx) target[arrayKey].splice(idx, 1);
+        const container = listItem.parentElement;
+        const remaining = container.querySelectorAll('.list-item');
+        remaining.forEach((item, newIdx) => {
+            item.setAttribute('data-index', newIdx);
+            const inp = item.querySelector('.list-input');
+            if (inp) inp.setAttribute('data-index', newIdx);
+            const rem = item.querySelector('.remove-item-btn');
+            if (rem) rem.setAttribute('data-index', newIdx);
+        });
+    }
+
+    function handleListInputChange(e) {
+        const key = e.currentTarget.dataset.key;
+        const idx = parseInt(e.currentTarget.dataset.index);
+        const newValue = e.currentTarget.value;
+        const path = key.split('_');
+        let target = areaEditData;
+        for (let i = 0; i < path.length - 1; i++) target = target[path[i]];
+        const arrayKey = path[path.length - 1];
+        if (!target[arrayKey]) target[arrayKey] = [];
+        target[arrayKey][idx] = newValue;
+    }
+
+    function collectAreaEditData() {
+        areaEditData.areaKnowledge = {
+            vibe: document.getElementById('ak_vibe')?.value || '',
+            socialInfra: document.getElementById('ak_socialInfra')?.value || '',
+            convenience: document.getElementById('ak_convenience')?.value || ''
+        };
+        areaEditData.priceInsight = {
+            averageRate: document.getElementById('pi_averageRate')?.value || '',
+            rentalRange: document.getElementById('pi_rentalRange')?.value || '',
+            appreciationPotential: document.getElementById('pi_appreciationPotential')?.value || ''
+        };
+        return areaEditData;
+    }
+
+    async function saveArea() {
+        const updated = collectAreaEditData();
+        try {
+            const res = await fetch(`${API_BASE}/areas/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(updated)
+            });
+            if (!res.ok) throw new Error(await res.text());
+            showToast('Area updated successfully');
+            const fresh = await fetchItem();
+            areaOriginalData = fresh;
+            areaEditData = deepClone(fresh);
+            areaEditMode = false;
+            renderAreaContent();
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    function cancelAreaEdit() {
+        areaEditMode = false;
+        renderAreaContent();
+    }
+
+    function renderAreaContent() {
+        const container = document.getElementById('detailContent');
+        const contentHtml = areaEditMode ? renderAreaEditForm(areaEditData) : renderAreaView(areaOriginalData);
+        const buttons = `
+            <div class="button-group">
+                ${areaEditMode ? `
+                    <button class="btn btn-secondary" onclick="cancelAreaEdit()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveArea()">Save Changes</button>
+                ` : `
+                    <button class="btn btn-secondary" id="editAreaBtn">✏️ Edit Area</button>
+                `}
+            </div>
+        `;
+        container.innerHTML = `<button class="back-btn" onclick="history.back()">← Back to List</button>${contentHtml}${buttons}`;
+        if (!areaEditMode) {
+            const editBtn = document.getElementById('editAreaBtn');
+            if (editBtn) editBtn.addEventListener('click', () => {
+                areaEditData = deepClone(areaOriginalData);
+                areaEditMode = true;
+                renderAreaContent();
+                attachDynamicListHandlers();
+            });
+        } else {
+            attachDynamicListHandlers();
+        }
+    }
+
+    // ========== LEAD ACTIONS (for lead detail page) ==========
+ // Helper: escape HTML to prevent XSS
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+        return c;
+    });
+}
+
+// Helper: format price (e.g., 1.2 Cr)
+function formatPrice(price) {
+    if (!price) return 'Price on request';
+    let num = parseFloat(price);
+    if (num >= 1e7) return (num / 1e7).toFixed(1) + ' Cr';
+    if (num >= 1e5) return (num / 1e5).toFixed(0) + ' L';
+    return num.toLocaleString();
+}
+
+// Helper: get image URL
+function getImageUrl(img) {
+    if (!img) return '/placeholder-image.jpg';  // default placeholder
+
+    // Agar base64 hai toh direct return
+    if (img.startsWith('data:image')) return img;
+
+    // Agar absolute URL hai (http:// ya https://) toh return as is
+    if (img.startsWith('http://') || img.startsWith('https://')) return img;
+
+    // Agar relative path hai (uploads/filename.jpg) toh add backend base URL
+    // Assuming your backend serves images from '/uploads' folder
+    const API_BASE_IMG = window.API_BASE || 'http://localhost:5000'; // adjust as needed
+    if (img.startsWith('/uploads/')) return `${API_BASE_IMG}${img}`;
+    if (img.startsWith('uploads/')) return `${API_BASE_IMG}/${img}`;
+
+    // Otherwise assume it's a filename in uploads folder
+    return `${API_BASE_IMG}/uploads/${img}`;
+}
+// ---------- Generic Modal Manager ----------
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('active');
+}
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('active');
+}
+function removeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.remove();
+}
+
+// ---------- WhatsApp Modal (Improved) ----------
+// Professional WhatsApp message builder
+function buildWhatsAppMessage(lead) {
+    const req = lead.requirementDetails || {};
+    
+    // Helper: check if value exists and not empty
+    const hasValue = (val) => val && val !== '' && val !== 'Not specified' && val !== 'undefined';
+    
+    // Start building message - clean and simple
+    let msg = `🏠 *LuxuryNest - Property Inquiry* 🏠\n\n`;
+    msg += `Thank you for your interest!\n\n`;
+    
+    // Customer name (if exists)
+    if (hasValue(lead.name)) {
+        msg += `*Customer:* ${lead.name}\n`;
+    }
+    msg += `*Phone:* ${lead.phone}\n`;
+    
+    // Add requirement details only if they exist
+    let hasAnyRequirement = false;
+    let reqSection = `\n📋 *Requirement:*\n`;
+    
+    if (hasValue(req.location)) {
+        reqSection += `📍 Location: ${req.location}\n`;
+        hasAnyRequirement = true;
+    }
+    if (hasValue(req.configuration)) {
+        reqSection += `🏢 Config: ${req.configuration} BHK\n`;
+        hasAnyRequirement = true;
+    } else if (hasValue(req.bedrooms)) {
+        reqSection += `🏢 Config: ${req.bedrooms} BHK\n`;
+        hasAnyRequirement = true;
+    } else if (hasValue(req.rentSize)) {
+        reqSection += `🏢 Size: ${req.rentSize}\n`;
+        hasAnyRequirement = true;
+    }
+    if (hasValue(req.budget)) {
+        reqSection += `💰 Budget: ${req.budget}\n`;
+        hasAnyRequirement = true;
+    }
+    if (hasValue(req.purpose)) {
+        reqSection += `🎯 Purpose: ${req.purpose}\n`;
+        hasAnyRequirement = true;
+    }
+    if (hasValue(req.timeline)) {
+        reqSection += `⏰ Timeline: ${req.timeline}\n`;
+        hasAnyRequirement = true;
+    }
+    if (hasValue(req.plotSize)) {
+        reqSection += `📐 Plot Size: ${req.plotSize}\n`;
+        hasAnyRequirement = true;
+    }
+    if (hasValue(req.furnishing)) {
+        reqSection += `🛋️ Furnishing: ${req.furnishing}\n`;
+        hasAnyRequirement = true;
+    }
+    if (hasValue(req.buyingPurpose)) {
+        reqSection += `🎯 Buying Purpose: ${req.buyingPurpose}\n`;
+        hasAnyRequirement = true;
+    }
+    if (hasValue(req.message)) {
+        reqSection += `💬 Note: ${req.message}\n`;
+        hasAnyRequirement = true;
+    }
+    
+    // If any requirement exists, add the section
+    if (hasAnyRequirement) {
+        msg += reqSection;
+    }
+    
+    // Matching property message
+    msg += `\n🔍 *We will match properties as per your requirements.*\n`;
+    msg += `📞 Our team will contact you shortly.\n\n`;
+    msg += `Thank you,\n*LuxuryNest Team*`;
+    
+    return msg;
+}
+
+
+function showWhatsAppModal(lead) {
+    const modalId = 'whatsappModal';
+    let existing = document.getElementById(modalId);
+    if (existing) existing.remove();
+
+    const phoneRaw = lead.phone.replace(/\D/g, '');
+    const defaultMsg = buildWhatsAppMessage(lead);
+    
+    const modalHtml = `
+        <div id="${modalId}" class="admin-modal-overlay">
+            <div class="admin-modal" style="max-width: 550px;">
+                <div class="admin-modal-header">
+                    <h3><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp</h3>
+                    <button class="admin-modal-close" onclick="closeModal('${modalId}')">&times;</button>
+                </div>
+                <div class="admin-modal-body">
+                    <div class="form-group">
+                        <label>Customer Phone</label>
+                        <input type="tel" id="waPhone" value="${phoneRaw}" placeholder="10-digit number">
+                    </div>
+                    <div class="form-group">
+                        <label>Message (editable)</label>
+                        <textarea id="waMessage" rows="8" style="font-family: monospace; font-size: 13px;">${escapeHtml(defaultMsg)}</textarea>
+                    </div>
+                </div>
+                <div class="admin-modal-footer">
+                    <button class="admin-btn admin-btn-secondary" onclick="closeModal('${modalId}')">Cancel</button>
+                    <button class="admin-btn admin-btn-primary" onclick="sendWhatsAppFromModal('${modalId}')">
+                        <i class="fab fa-whatsapp"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    openModal(modalId);
+}
+
+function sendWhatsAppFromModal(modalId) {
+    let phone = document.getElementById('waPhone').value.replace(/\D/g, '');
+    let message = document.getElementById('waMessage').value;
+    
+    if (!phone || phone.length !== 10) {
+        alert('Please enter a valid 10-digit mobile number');
+        return;
+    }
+    if (!message.trim()) {
+        alert('Message cannot be empty');
+        return;
+    }
+    
+    const fullPhone = `91${phone}`;
+    const encodedMsg = encodeURIComponent(message);
+    window.open(`https://wa.me/${fullPhone}?text=${encodedMsg}`, '_blank');
+    closeModal(modalId);
+}
+
+function sendWhatsAppFromModal(modalId) {
+    let phone = document.getElementById('waPhone').value.replace(/\D/g, '');
+    let message = document.getElementById('waMessage').value;
+    
+    if (!phone || phone.length !== 10) {
+        alert('❌ Please enter a valid 10-digit Indian mobile number.');
+        return;
+    }
+    if (!message.trim()) {
+        alert('❌ Message cannot be empty.');
+        return;
+    }
+    
+    // Prepend +91 if not present (assuming Indian numbers)
+    const fullPhone = `91${phone}`;
+    const encodedMsg = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${fullPhone}?text=${encodedMsg}`;
+    
+    // Open in new tab
+    window.open(whatsappUrl, '_blank');
+    closeModal(modalId);
+    
+    // Optional: log or track
+    console.log(`WhatsApp message sent to ${phone}`);
+}
+// ---------- Property Matching Modal ----------
+function getLeadRequirement(lead) {
+    const req = lead.requirementDetails || {};
+    return {
+        location: req.location || lead.area || '',
+        bedrooms: req.bedrooms ? parseFloat(req.bedrooms) : null,
+        budget: req.budget || '',
+        purpose: req.purpose || (lead.propertySlug ? 'buying' : '')
+    };
+}
+async function findMatchingProperties(lead) {
+    const req = getLeadRequirement(lead);
+    let params = new URLSearchParams();
+    if (req.location) params.append('location', req.location);
+    if (req.bedrooms) params.append('bedrooms', req.bedrooms);
+    if (req.budget) {
+        let budgetStr = req.budget.toLowerCase();
+        let min = 0, max = Infinity;
+        if (budgetStr.includes('cr')) { let num = parseFloat(budgetStr); min = num * 1e7; max = (num + 2) * 1e7; }
+        else if (budgetStr.includes('l')) { let num = parseFloat(budgetStr); min = num * 1e5; max = (num + 2) * 1e5; }
+        else { min = parseFloat(budgetStr) || 0; max = min * 2; }
+        params.append('minPrice', min);
+        params.append('maxPrice', max);
+    }
+    if (req.purpose) { let type = req.purpose === 'rent' ? 'rent' : 'resale'; params.append('type', type); }
+    const token = localStorage.getItem('token'); // adjust as needed
+    const res = await fetch(`${API_BASE}/properties?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return await res.json();
+}
+
+
+
+
+
+async function findAndShowMatches(lead) {
+    const properties = await findMatchingProperties(lead);
+    showPropertyResultsModal(properties, lead.name);
+}
+
+
+
+
+
+function showPropertyResultsModal(properties, leadName) {
+    const modalId = 'propertyResultsModal';
+    let existing = document.getElementById(modalId);
+    if (existing) existing.remove();
+
+    const resultsHtml = properties.length === 0 
+        ? '<p style="text-align:center;padding:20px;">✨ No matching properties found.</p>'
+        : `<div class="results-list">${properties.map(prop => `
+            <div class="property-result-item" onclick="window.location.href='/luxuryadmin/detail.html?type=property&id=${prop._id}'">
+                <img class="property-result-img" src="${getImageUrl(prop.images?.[0])}" 
+                     onerror="this.onerror=null; this.src='https://via.placeholder.com/70x70?text=Error'">
+                <div class="property-result-info">
+                    <div class="property-result-title">${escapeHtml(prop.title)}</div>
+                    <div class="property-result-price">${formatPrice(prop.unitDetails?.priceValue)}</div>
+                    <div>${prop.unitDetails?.bedrooms || '?'} BHK · ${prop.unitDetails?.sqft || ''} sqft</div>
+                </div>
+            </div>
+        `).join('')}</div>`;
+
+    const modalHtml = `
+        <div id="${modalId}" class="admin-modal-overlay">
+            <div class="admin-modal" style="max-width:650px">
+                <div class="admin-modal-header">
+                    <h3><i class="fas fa-building"></i> Properties for ${escapeHtml(leadName)}</h3>
+                    <button class="admin-modal-close" onclick="closeModal('${modalId}')">&times;</button>
+                </div>
+                <div class="admin-modal-body">
+                    ${resultsHtml}
+                </div>
+                <div class="admin-modal-footer">
+                    <button class="admin-btn admin-btn-secondary" onclick="closeModal('${modalId}')">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    openModal(modalId);
+}
+
+
+function findAndShowProperties(lead) {
+    findAndShowMatches(lead); // same function
+}
+
+// ---------- Lead Action Buttons (Improved) ----------
+function addLeadActionButtons(lead) {
+    // Remove existing if any
+    const existingActions = document.querySelector('.lead-actions');
+    if (existingActions) existingActions.remove();
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'lead-actions';
+    // Use data attributes to avoid JSON stringify issues
+    actionsDiv.setAttribute('data-lead', JSON.stringify(lead));
+    actionsDiv.innerHTML = `
+        <button class="action-btn call" onclick="window.location.href='tel:${lead.phone}'"><i class="fas fa-phone-alt"></i> Call</button>
+        <button class="action-btn whatsapp" onclick="showWhatsAppModal(window.leadData)"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+        <button class="action-btn find-deal" onclick="findAndShowMatches(window.leadData)"><i class="fas fa-search"></i> Find Deal</button>
+        <button class="action-btn find-property" onclick="findAndShowProperties(window.leadData)"><i class="fas fa-building"></i> Find Property</button>
+    `;
+    const container = document.getElementById('detailContent');
+    if (!container) return;
+    const lastCard = container.querySelector('.section-card:last-of-type');
+    if (lastCard) lastCard.insertAdjacentElement('afterend', actionsDiv);
+    else container.appendChild(actionsDiv);
+    
+    // Store lead globally for button callbacks
+    window.leadData = lead;
+}
+
+
+    // ==================== SIDEBAR COLLAPSE (Desktop) ====================
+// ========== SIDEBAR COLLAPSE (Desktop) ==========
+function setupSidebarCollapse() {
+    const sidebar = document.getElementById('sidebar');
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    const mainContent = document.getElementById('mainContent');
+    
+    if (!sidebar || !collapseBtn) return;
+    
+    const isDesktop = () => window.innerWidth > 768;
+    const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (savedCollapsed && isDesktop()) {
+        sidebar.classList.add('collapsed');
+        if (mainContent) mainContent.classList.add('sidebar-collapsed');
+        const icon = collapseBtn.querySelector('i');
+        if (icon) {
+            icon.classList.remove('fa-chevron-left');
+            icon.classList.add('fa-chevron-right');
+        }
+    }
+    
+    collapseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!isDesktop()) return;
+        sidebar.classList.toggle('collapsed');
+        if (mainContent) mainContent.classList.toggle('sidebar-collapsed');
+        const nowCollapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('sidebarCollapsed', nowCollapsed);
+        const icon = collapseBtn.querySelector('i');
+        if (icon) {
+            if (nowCollapsed) {
+                icon.classList.remove('fa-chevron-left');
+                icon.classList.add('fa-chevron-right');
+            } else {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-left');
+            }
+        }
+    });
+    
+    window.addEventListener('resize', () => {
+        if (isDesktop()) {
+            const saved = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (saved) {
+                sidebar.classList.add('collapsed');
+                if (mainContent) mainContent.classList.add('sidebar-collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+                if (mainContent) mainContent.classList.remove('sidebar-collapsed');
+            }
+        } else {
+            sidebar.classList.remove('collapsed');
+            if (mainContent) mainContent.classList.remove('sidebar-collapsed');
+        }
+    });
+}
+
+    // ========== UPDATE LOAD AND DISPLAY ==========
+    async function loadAndDisplay() {
+    const container = document.getElementById('detailContent');
+    container.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const item = await fetchItem();
+        if (!item) return;
+        originalData = item;
+        let viewHtml = '';
+        
+        if (type === 'lead') {
+            viewHtml = await renderLeadView(item);
+            container.innerHTML = `<button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>${viewHtml}`;
+            addLeadActionButtons(item);
+            const editBtnDiv = document.createElement('div');
+            editBtnDiv.className = 'button-group';
+            editBtnDiv.innerHTML = `<button id="editBtn" class="btn btn-secondary">✏️ Edit</button>`;
+            container.appendChild(editBtnDiv);
+            document.getElementById('editBtn').onclick = () => {
+                const editHtml = buildEditForm(originalData);
+                container.innerHTML = `<button class="back-btn" onclick="history.back()">← Back</button>${editHtml}`;
+                document.getElementById('editForm').addEventListener('submit', submitEditForm);
+                document.getElementById('cancelEditBtn').onclick = () => loadAndDisplay();
+            };
+        } 
+        else if (type === 'project') {
+            viewHtml = await renderProjectView(item);
+            container.innerHTML = `<button class="back-btn" onclick="history.back()">← Back</button>${viewHtml}`;
+            const editBtnDiv = document.createElement('div');
+            editBtnDiv.className = 'button-group';
+            editBtnDiv.innerHTML = `<button id="editBtn" class="btn btn-secondary">✏️ Edit</button>`;
+            container.appendChild(editBtnDiv);
+            
+            document.getElementById('editBtn').onclick = () => {
+                const editHtml = buildEditForm(originalData);
+                container.innerHTML = `<button class="back-btn" onclick="history.back()">← Back</button>${editHtml}`;
+                
+                // 🔥 FIX: Attach event to collect data before submit
+                const editForm = document.getElementById('editForm');
+                if (editForm) {
+                    editForm.addEventListener('submit', function(e) {
+                        // Collect configurations from DOM
+                        const configs = [];
+                        document.querySelectorAll('.config-edit-block').forEach(block => {
+                            const idx = block.getAttribute('data-idx');
+                            const type = document.querySelector(`[name="config_type_${idx}"]`)?.value;
+                            if (!type) return;
+                            const bedrooms = parseFloat(document.querySelector(`[name="config_bedrooms_${idx}"]`)?.value) || 0;
+                            const bathrooms = parseFloat(document.querySelector(`[name="config_bathrooms_${idx}"]`)?.value) || 0;
+                            const balconies = parseFloat(document.querySelector(`[name="config_balconies_${idx}"]`)?.value) || 0;
+                            const sizes = Array.from(block.querySelectorAll('.size-tag')).map(tag => parseFloat(tag.innerText.replace('x', '').trim()));
+                            configs.push({ type, bedrooms, bathrooms, balconies, sizes });
+                        });
+                        
+                        // Collect amenities
+                        const sports = [], family = [], safety = [], environment = [];
+                        document.querySelectorAll('.amenity-chip.selected').forEach(chip => {
+                            const amenity = chip.getAttribute('data-amenity');
+                            if (['Gymnasium', 'Swimming Pool', 'Badminton Court', 'Half Basketball Court', 'Squash Court', 'Cricket Practice Pitch', 'Yoga & Meditation Deck'].includes(amenity)) {
+                                sports.push(amenity);
+                            } else if (['Kids Play Area', 'Clubhouse', 'Multipurpose Hall', 'Indoor Games Room', 'Library', 'Mini Theatre', 'Co-working Space', 'Pet Park', 'Senior Citizen Park', 'Jogging Track', 'Landscaped Gardens'].includes(amenity)) {
+                                family.push(amenity);
+                            } else if (['24/7 Security', 'Fire Fighting System', 'CCTV Surveillance', 'Video Door Phone', 'Digital Visitor Management', 'Smart Parcel Lockers'].includes(amenity)) {
+                                safety.push(amenity);
+                            } else {
+                                environment.push(amenity);
+                            }
+                        });
+                        const amenities = { sports, family, safety, environment };
+                        
+                        // Collect connectivity
+                        const connectivity = [];
+                        document.querySelectorAll('#editConnectivityList .list-item').forEach(item => {
+                            const name = item.querySelector('input[placeholder="Name"]')?.value;
+                            const distance = item.querySelector('input[placeholder="Distance"]')?.value;
+                            if (name) connectivity.push({ name, distance: distance || '' });
+                        });
+                        
+                        // Collect landmarks
+                        const landmarks = [];
+                        document.querySelectorAll('#editLandmarksList .list-item').forEach(item => {
+                            const name = item.querySelector('input[placeholder="Name"]')?.value;
+                            const distance = item.querySelector('input[placeholder="Distance"]')?.value;
+                            const type = item.querySelector('select')?.value;
+                            if (name) landmarks.push({ name, distance: distance || '', type: type || 'other' });
+                        });
+                        
+                        // Collect USP
+                        const usp = [];
+                        document.querySelectorAll('#editUspList .list-item input').forEach(input => {
+                            const val = input.value.trim();
+                            if (val) usp.push(val);
+                        });
+                        
+                        // Create hidden fields if not exist, or update existing
+                        let configsHidden = document.getElementById('configurationsHidden');
+                        if (!configsHidden) {
+                            configsHidden = document.createElement('input');
+                            configsHidden.type = 'hidden';
+                            configsHidden.name = 'configurations';
+                            configsHidden.id = 'configurationsHidden';
+                            editForm.appendChild(configsHidden);
+                        }
+                        configsHidden.value = JSON.stringify(configs);
+                        
+                        let amenitiesHidden = document.getElementById('amenitiesHidden');
+                        if (!amenitiesHidden) {
+                            amenitiesHidden = document.createElement('input');
+                            amenitiesHidden.type = 'hidden';
+                            amenitiesHidden.name = 'amenities';
+                            amenitiesHidden.id = 'amenitiesHidden';
+                            editForm.appendChild(amenitiesHidden);
+                        }
+                        amenitiesHidden.value = JSON.stringify(amenities);
+                        
+                        let connectivityHidden = document.getElementById('connectivityHidden');
+                        if (!connectivityHidden) {
+                            connectivityHidden = document.createElement('input');
+                            connectivityHidden.type = 'hidden';
+                            connectivityHidden.name = 'connectivity';
+                            connectivityHidden.id = 'connectivityHidden';
+                            editForm.appendChild(connectivityHidden);
+                        }
+                        connectivityHidden.value = JSON.stringify(connectivity);
+                        
+                        let landmarksHidden = document.getElementById('landmarksHidden');
+                        if (!landmarksHidden) {
+                            landmarksHidden = document.createElement('input');
+                            landmarksHidden.type = 'hidden';
+                            landmarksHidden.name = 'landmarks';
+                            landmarksHidden.id = 'landmarksHidden';
+                            editForm.appendChild(landmarksHidden);
+                        }
+                        landmarksHidden.value = JSON.stringify(landmarks);
+                        
+                        let uspHidden = document.getElementById('uspHidden');
+                        if (!uspHidden) {
+                            uspHidden = document.createElement('input');
+                            uspHidden.type = 'hidden';
+                            uspHidden.name = 'usp';
+                            uspHidden.id = 'uspHidden';
+                            editForm.appendChild(uspHidden);
+                        }
+                        uspHidden.value = JSON.stringify(usp);
+                    });
+                }
+                
+                document.getElementById('editForm').addEventListener('submit', submitEditForm);
+                document.getElementById('cancelEditBtn').onclick = () => loadAndDisplay();
+            };
+        } 
+        else if (type === 'property') {
+            viewHtml = renderPropertyView(item);
+            container.innerHTML = `<button class="back-btn" onclick="history.back()">← Back</button>${viewHtml}`;
+            const editBtnDiv = document.createElement('div');
+            editBtnDiv.className = 'button-group';
+            editBtnDiv.innerHTML = `<button id="editBtn" class="btn btn-secondary">✏️ Edit</button>`;
+            container.appendChild(editBtnDiv);
+            document.getElementById('editBtn').onclick = () => {
+                const editHtml = buildEditForm(originalData);
+                container.innerHTML = `<button class="back-btn" onclick="history.back()">← Back</button>${editHtml}`;
+                document.getElementById('editForm').addEventListener('submit', submitEditForm);
+                document.getElementById('cancelEditBtn').onclick = () => loadAndDisplay();
+            };
+        } 
+        else if (type === 'area') {
+            const area = await fetchItem();
+            areaOriginalData = area;
+            areaEditData = deepClone(area);
+            areaEditMode = false;
+            renderAreaContent();
+        } 
+        else {
+            container.innerHTML = '<p>Invalid type</p>';
+        }
+    } catch(err) {
+        container.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+    }
+}
+   
+
+
+// Generate HTML for a configuration block
+function generateConfigBlockHtml(idx, cfg = {}) {
+    const sizesHtml = (cfg.sizes || []).map(sz => `<span class="size-tag">${sz} <button type="button" class="remove-size" onclick="removeSizeFromConfig(this, ${idx})">x</button></span>`).join('');
+    return `
+        <div class="config-edit-block" data-idx="${idx}" id="configBlock_${idx}">
+            <div class="form-row">
+                <div class="form-group"><label>Type</label><input name="config_type_${idx}" value="${escapeHtml(cfg.type || '')}" placeholder="e.g., 2 BHK"></div>
+                <div class="form-group"><label>Bedrooms</label><input type="number" step="0.5" name="config_bedrooms_${idx}" value="${cfg.bedrooms || ''}"></div>
+                <div class="form-group"><label>Bathrooms</label><input type="number" step="0.5" name="config_bathrooms_${idx}" value="${cfg.bathrooms || ''}"></div>
+                <div class="form-group"><label>Balconies</label><input type="number" step="0.5" name="config_balconies_${idx}" value="${cfg.balconies || ''}"></div>
+            </div>
+            <div class="form-group">
+                <label>Sizes (sq.ft.)</label>
+                <div class="sizes-list" id="sizesList_${idx}">
+                    ${sizesHtml}
+                </div>
+                <div class="add-size-row">
+                    <input type="number" id="newSize_${idx}" placeholder="Add size">
+                    <button type="button" class="btn-small" onclick="addSizeToConfig(${idx})">+ Add</button>
+                </div>
+            </div>
+            <button type="button" class="btn-small" onclick="removeConfigBlock(${idx})">Remove Configuration</button>
+        </div>
+    `;
+}
+
+// Add new configuration block
+function addNewConfigBlock() {
+    const container = document.getElementById('editConfigsContainer');
+    const currentBlocks = document.querySelectorAll('.config-edit-block');
+    const newIdx = currentBlocks.length;
+    const newBlockHtml = generateConfigBlockHtml(newIdx, {});
+    container.insertAdjacentHTML('beforeend', newBlockHtml);
+}
+
+// Remove configuration block
+function removeConfigBlock(idx) {
+    const block = document.getElementById(`configBlock_${idx}`);
+    if (block) block.remove();
+    // Re-index remaining blocks
+    document.querySelectorAll('.config-edit-block').forEach((block, newIdx) => {
+        block.setAttribute('data-idx', newIdx);
+        block.id = `configBlock_${newIdx}`;
+        // Update input names
+        block.querySelectorAll('input[name^="config_type_"], input[name^="config_bedrooms_"], input[name^="config_bathrooms_"], input[name^="config_balconies_"]').forEach(input => {
+            const oldName = input.getAttribute('name');
+            const newName = oldName.replace(/_\d+/, `_${newIdx}`);
+            input.setAttribute('name', newName);
+        });
+        // Update size list id
+        const sizesList = block.querySelector('.sizes-list');
+        if (sizesList) sizesList.id = `sizesList_${newIdx}`;
+        const addSizeInput = block.querySelector('.add-size-row input');
+        if (addSizeInput) addSizeInput.id = `newSize_${newIdx}`;
+        const addSizeBtn = block.querySelector('.add-size-row button');
+        if (addSizeBtn) addSizeBtn.setAttribute('onclick', `addSizeToConfig(${newIdx})`);
+        const removeBtn = block.querySelector('button[onclick^="removeConfigBlock"]');
+        if (removeBtn) removeBtn.setAttribute('onclick', `removeConfigBlock(${newIdx})`);
+    });
+}
+
+// Add size to configuration
+function addSizeToConfig(idx) {
+    const input = document.getElementById(`newSize_${idx}`);
+    const val = input.value.trim();
+    if (!val) return;
+    const sizesContainer = document.getElementById(`sizesList_${idx}`);
+    const span = document.createElement('span');
+    span.className = 'size-tag';
+    span.innerHTML = `${val} <button type="button" class="remove-size" onclick="removeSizeFromConfig(this, ${idx})">x</button>`;
+    sizesContainer.appendChild(span);
+    input.value = '';
+}
+
+// Remove size from configuration
+function removeSizeFromConfig(btn, idx) {
+    btn.parentElement.remove();
+}
+
+// Toggle amenity chip selection
+function toggleAmenityChip(chip) {
+    chip.classList.toggle('selected');
+    if (chip.classList.contains('selected')) {
+        chip.style.background = '#3b82f6';
+        chip.style.color = 'white';
+    } else {
+        chip.style.background = '#e2e8f0';
+        chip.style.color = '#1e293b';
+    }
+}
+
+// Add custom amenity
+function addCustomAmenity() {
+    const custom = prompt("Enter custom amenity name:");
+    if (custom && custom.trim()) {
+        const container = document.getElementById('editAmenitiesContainer');
+        const chip = document.createElement('span');
+        chip.className = 'amenity-chip selected';
+        chip.setAttribute('data-amenity', custom.trim());
+        chip.style.background = '#3b82f6';
+        chip.style.color = 'white';
+        chip.innerHTML = custom.trim();
+        chip.onclick = function() { toggleAmenityChip(this); };
+        container.appendChild(chip);
+    }
+}
+
+// Generate connectivity item HTML
+function generateConnectivityItemHtml(idx, conn = {}) {
+    return `
+        <div class="list-item" data-idx="${idx}" id="connItem_${idx}">
+            <input type="text" name="conn_name_${idx}" value="${escapeHtml(conn.name || '')}" placeholder="Name">
+            <input type="text" name="conn_distance_${idx}" value="${escapeHtml(conn.distance || '')}" placeholder="Distance">
+            <button type="button" class="btn-small" onclick="removeConnectivityItem(${idx})">Remove</button>
+        </div>
+    `;
+}
+
+// Add connectivity item
+function addConnectivityItem() {
+    const container = document.getElementById('editConnectivityList');
+    const currentItems = document.querySelectorAll('#editConnectivityList .list-item');
+    const newIdx = currentItems.length;
+    const newItemHtml = generateConnectivityItemHtml(newIdx, {});
+    container.insertAdjacentHTML('beforeend', newItemHtml);
+}
+
+// Remove connectivity item
+function removeConnectivityItem(idx) {
+    const item = document.getElementById(`connItem_${idx}`);
+    if (item) item.remove();
+    // Re-index remaining items
+    document.querySelectorAll('#editConnectivityList .list-item').forEach((item, newIdx) => {
+        item.setAttribute('data-idx', newIdx);
+        item.id = `connItem_${newIdx}`;
+        const inputs = item.querySelectorAll('input');
+        inputs.forEach(input => {
+            const oldName = input.getAttribute('name');
+            const newName = oldName.replace(/_\d+/, `_${newIdx}`);
+            input.setAttribute('name', newName);
+        });
+        const removeBtn = item.querySelector('button');
+        if (removeBtn) removeBtn.setAttribute('onclick', `removeConnectivityItem(${newIdx})`);
+    });
+}
+
+// Generate landmark item HTML
+function generateLandmarkItemHtml(idx, land = {}) {
+    return `
+        <div class="list-item" data-idx="${idx}" id="landItem_${idx}">
+            <input type="text" name="land_name_${idx}" value="${escapeHtml(land.name || '')}" placeholder="Name">
+            <input type="text" name="land_distance_${idx}" value="${escapeHtml(land.distance || '')}" placeholder="Distance">
+            <select name="land_type_${idx}">
+                <option value="metro" ${land.type === 'metro' ? 'selected' : ''}>Metro</option>
+                <option value="school" ${land.type === 'school' ? 'selected' : ''}>School</option>
+                <option value="mall" ${land.type === 'mall' ? 'selected' : ''}>Mall</option>
+                <option value="hospital" ${land.type === 'hospital' ? 'selected' : ''}>Hospital</option>
+                <option value="business" ${land.type === 'business' ? 'selected' : ''}>Business</option>
+            </select>
+            <button type="button" class="btn-small" onclick="removeLandmarkItem(${idx})">Remove</button>
+        </div>
+    `;
+}
+
+// Add landmark item
+function addLandmarkItem() {
+    const container = document.getElementById('editLandmarksList');
+    const currentItems = document.querySelectorAll('#editLandmarksList .list-item');
+    const newIdx = currentItems.length;
+    const newItemHtml = generateLandmarkItemHtml(newIdx, {});
+    container.insertAdjacentHTML('beforeend', newItemHtml);
+}
+
+// Remove landmark item
+function removeLandmarkItem(idx) {
+    const item = document.getElementById(`landItem_${idx}`);
+    if (item) item.remove();
+    // Re-index
+    document.querySelectorAll('#editLandmarksList .list-item').forEach((item, newIdx) => {
+        item.setAttribute('data-idx', newIdx);
+        item.id = `landItem_${newIdx}`;
+        const inputs = item.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            const oldName = input.getAttribute('name');
+            const newName = oldName.replace(/_\d+/, `_${newIdx}`);
+            input.setAttribute('name', newName);
+        });
+        const removeBtn = item.querySelector('button');
+        if (removeBtn) removeBtn.setAttribute('onclick', `removeLandmarkItem(${newIdx})`);
+    });
+}
+
+// Generate USP item HTML
+function generateUspItemHtml(idx, usp = '') {
+    return `
+        <div class="list-item" id="uspItem_${idx}">
+            <input type="text" name="usp_${idx}" value="${escapeHtml(usp)}" placeholder="USP">
+            <button type="button" class="btn-small" onclick="removeUspItem(${idx})">Remove</button>
+        </div>
+    `;
+}
+
+// Add USP item
+function addUspItem() {
+    const container = document.getElementById('editUspList');
+    const currentItems = document.querySelectorAll('#editUspList .list-item');
+    const newIdx = currentItems.length;
+    const newItemHtml = generateUspItemHtml(newIdx, '');
+    container.insertAdjacentHTML('beforeend', newItemHtml);
+}
+
+// Remove USP item
+function removeUspItem(idx) {
+    const item = document.getElementById(`uspItem_${idx}`);
+    if (item) item.remove();
+    // Re-index
+    document.querySelectorAll('#editUspList .list-item').forEach((item, newIdx) => {
+        item.id = `uspItem_${newIdx}`;
+        const input = item.querySelector('input');
+        if (input) {
+            const oldName = input.getAttribute('name');
+            const newName = oldName.replace(/_\d+/, `_${newIdx}`);
+            input.setAttribute('name', newName);
+        }
+        const removeBtn = item.querySelector('button');
+        if (removeBtn) removeBtn.setAttribute('onclick', `removeUspItem(${newIdx})`);
+    });
+}
+
+
+
+
+// ========== EDIT FORM (for non‑area types) ==========
+ function buildEditForm(item) {
+    let formHtml = `<div class="section-card"><div class="section-title">✏️ Edit ${type.charAt(0).toUpperCase() + type.slice(1)}</div><form id="editForm" class="form-grid">`;
+    
+    if (type === 'lead') {
+        const req = item.requirementDetails || {};
+        formHtml += `
+            <div class="full-width form-group"><label>Name</label><input name="name" value="${escapeHtml(item.name)}" required></div>
+            <div class="form-group"><label>Email</label><input name="email" value="${escapeHtml(item.email)}"></div>
+            <div class="form-group"><label>Phone</label><input name="phone" value="${escapeHtml(item.phone)}" required></div>
+            <div class="form-group"><label>Status</label>
+                <select name="status">
+                    <option value="new" ${item.status === 'new' ? 'selected' : ''}>New</option>
+                    <option value="contacted" ${item.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+                    <option value="closed" ${item.status === 'closed' ? 'selected' : ''}>Closed</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Source</label><input name="source" value="${escapeHtml(item.source)}"></div>
+            <div class="full-width"><h4>📋 Requirement Details</h4></div>
+        `;
+        Object.entries(req).forEach(([k, v]) => {
+            formHtml += `<div class="full-width form-group"><label>${escapeHtml(formatKey(k))}</label><input name="req_${escapeHtml(k)}" value="${escapeHtml(String(v))}"></div>`;
+        });
+    }
+    
+  else if (type === 'project') {
+    const configs = item.configurations || [];
+    const amenities = item.amenities || {};
+    const connectivity = item.connectivity || [];
+    const landmarks = item.landmarks || [];
+    const usp = item.features?.usp || [];
+    
+    // Basic Info
+    formHtml += `
+        <div class="full-width form-group"><label>Project Name</label><input name="name" value="${escapeHtml(item.name)}" required></div>
+        <div class="full-width form-group"><label>Slug</label><input name="slug" value="${escapeHtml(item.slug)}" required></div>
+        <div class="form-group"><label>Developer</label><input name="developer" value="${escapeHtml(item.developer?.name || item.developer)}"></div>
+        <div class="form-group"><label>Live Status</label>
+            <select name="liveStatus">
+                <option value="active" ${item.liveStatus === 'active' ? 'selected' : ''}>Active</option>
+                <option value="inactive" ${item.liveStatus === 'inactive' ? 'selected' : ''}>Inactive</option>
+            </select>
+        </div>
+        <div class="form-group"><label>Address</label><input name="address" value="${escapeHtml(item.location?.address || '')}"></div>
+        <div class="form-group"><label>City</label><input name="city" value="${escapeHtml(item.location?.city || '')}"></div>
+        <div class="form-group"><label>Sector</label><input name="sector" value="${escapeHtml(item.location?.sector || '')}"></div>
+    `;
+    
+    // Configurations Section
+    formHtml += `<div class="full-width"><h4>🏗️ Configurations</h4><div id="editConfigsContainer" class="configs-list">`;
+    configs.forEach((cfg, idx) => {
+        formHtml += generateConfigBlockHtml(idx, cfg);
+    });
+    formHtml += `</div>
+        <button type="button" class="btn-small" onclick="addNewConfigBlock()">+ Add Configuration</button>
+        <input type="hidden" name="configurations" id="configurationsHidden" value="">
+    </div>`;
+    
+    // Amenities Section
+    const allAmenities = ["24/7 Security", "Power Backup", "High-Speed Elevators", "Ample Parking", "Fire Fighting System", "Piped Gas Connection", "Intercom Facility", "Landscaped Gardens", "Kids' Play Area", "Senior Citizen Park", "Jogging Track", "Gymnasium", "Swimming Pool", "Clubhouse", "Multipurpose Hall", "Indoor Games Room", "Badminton Court", "Half Basketball Court", "Yoga & Meditation Deck", "Library", "Rainwater Harvesting", "Sewage Treatment Plant", "EV Charging Stations", "CCTV Surveillance", "Smart Home Automation", "Video Door Phone", "Co-working Space", "Mini Theatre", "Pet Park", "Cricket Practice Pitch", "Squash Court", "Spa & Sauna", "Infinity Edge Pool", "Sky Lounge", "Rooftop Garden", "Private Elevator", "Concierge Service", "Valet Parking", "Guest Suites", "Temperature Controlled Pool", "Digital Visitor Management", "Smart Parcel Lockers", "Reflexology Track", "Organic Kitchen Garden", "Business Centre"];
+    const selectedAmenitiesSet = new Set([...(amenities.sports || []), ...(amenities.family || []), ...(amenities.safety || []), ...(amenities.environment || [])]);
+    
+    formHtml += `<div class="full-width"><h4>🎯 Amenities</h4><div class="amenities-grid" id="editAmenitiesContainer">`;
+    allAmenities.forEach(amen => {
+        const isSelected = selectedAmenitiesSet.has(amen);
+        formHtml += `<span class="amenity-chip ${isSelected ? 'selected' : ''}" data-amenity="${escapeHtml(amen)}" onclick="toggleAmenityChip(this)">${escapeHtml(amen)}</span>`;
+    });
+    formHtml += `</div>
+        <button type="button" class="btn-small" onclick="addCustomAmenity()">+ Add Custom Amenity</button>
+        <input type="hidden" name="amenities" id="amenitiesHidden" value="">
+    </div>`;
+    
+    // Connectivity Section
+    formHtml += `<div class="full-width"><h4>🔗 Connectivity</h4><div id="editConnectivityList">`;
+    connectivity.forEach((conn, idx) => {
+        formHtml += generateConnectivityItemHtml(idx, conn);
+    });
+    formHtml += `</div>
+        <button type="button" class="btn-small" onclick="addConnectivityItem()">+ Add Connectivity</button>
+        <input type="hidden" name="connectivity" id="connectivityHidden" value="">
+    </div>`;
+    
+    // Landmarks Section
+    formHtml += `<div class="full-width"><h4>📍 Landmarks</h4><div id="editLandmarksList">`;
+    landmarks.forEach((land, idx) => {
+        formHtml += generateLandmarkItemHtml(idx, land);
+    });
+    formHtml += `</div>
+        <button type="button" class="btn-small" onclick="addLandmarkItem()">+ Add Landmark</button>
+        <input type="hidden" name="landmarks" id="landmarksHidden" value="">
+    </div>`;
+    
+    // USP Section
+    formHtml += `<div class="full-width"><h4>✨ USP / Features</h4><div id="editUspList">`;
+    usp.forEach((u, idx) => {
+        formHtml += generateUspItemHtml(idx, u);
+    });
+    formHtml += `</div>
+        <button type="button" class="btn-small" onclick="addUspItem()">+ Add USP</button>
+        <input type="hidden" name="usp" id="uspHidden" value="">
+    </div>`;
+}
+
+
+else if (type === 'property') {
+        const unit = item.unitDetails || {};
+        const gated = item.gatedInfo || {};
+        
+        formHtml += `
+            <div class="full-width form-group"><label>Title</label><input name="title" value="${escapeHtml(item.title)}" required></div>
+            <div class="full-width form-group"><label>Slug</label><input name="slug" value="${escapeHtml(item.slug)}" required></div>
+            <div class="form-group"><label>Price</label><input name="price" value="${escapeHtml(unit.price)}"></div>
+            <div class="form-group"><label>Price Value</label><input name="priceValue" type="number" step="any" value="${unit.priceValue || ''}"></div>
+            <div class="form-group"><label>Bedrooms</label><input name="bedrooms" value="${unit.bedrooms || ''}"></div>
+            <div class="form-group"><label>Bathrooms</label><input name="bathrooms" value="${unit.bathrooms || ''}"></div>
+            <div class="form-group"><label>sqft</label><input name="sqft" value="${unit.sqft || ''}"></div>
+            <div class="form-group"><label>Type</label>
+                <select name="type">
+                    <option value="resale" ${unit.type === 'resale' ? 'selected' : ''}>Resale</option>
+                    <option value="rent" ${unit.type === 'rent' ? 'selected' : ''}>Rent</option>
+                    <option value="floor" ${unit.type === 'floor' ? 'selected' : ''}>Floor</option>
+                    <option value="plot" ${unit.type === 'plot' ? 'selected' : ''}>Plot</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Live Status</label>
+                <select name="liveStatus">
+                    <option value="active" ${item.liveStatus === 'active' ? 'selected' : ''}>Active</option>
+                    <option value="inactive" ${item.liveStatus === 'inactive' ? 'selected' : ''}>Inactive</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Featured</label>
+                <select name="featured">
+                    <option value="true" ${item.featured ? 'selected' : ''}>Yes</option>
+                    <option value="false" ${!item.featured ? 'selected' : ''}>No</option>
+                </select>
+            </div>
+            <div class="full-width form-group"><label>🔒 Gated Info</label>
+                <div class="form-row">
+                    <div class="form-group"><label>Exact Price</label><input name="exactPrice" value="${escapeHtml(gated.exactPrice || '')}"></div>
+                    <div class="form-group"><label>Negotiation Insights</label><input name="negotiationInsights" value="${escapeHtml(gated.negotiationInsights || '')}"></div>
+                    <div class="form-group"><label>Availability</label><input name="availability" value="${escapeHtml(gated.availability || '')}"></div>
+                    <div class="form-group"><label>Seller Motivation</label><input name="sellerMotivation" value="${escapeHtml(gated.sellerMotivation || '')}"></div>
+                </div>
+            </div>
+        `;
+    }
+    
+    formHtml += `</form><div class="button-group"><button type="submit" form="editForm" class="btn btn-primary">💾 Save Changes</button><button id="cancelEditBtn" class="btn btn-secondary">❌ Cancel</button></div></div>`;
+    return formHtml;
+}
+
+  async function submitEditForm(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    let payload = {};
+    let endpoint = '';
+    
+    if (type === 'lead') endpoint = `${API_BASE}/leads/${id}`;
+    else if (type === 'project') endpoint = `${API_BASE}/admin/projects/${id}`;
+    else if (type === 'property') endpoint = `${API_BASE}/admin/properties/${id}`;
+    else { showToast('Edit not implemented for ' + type, true); return; }
+    
+    if (type === 'lead') {
+        const reqDetails = {};
+        for (let [k, v] of formData.entries()) {
+            if (k.startsWith('req_')) reqDetails[k.substring(4)] = v;
+        }
+        payload = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            status: formData.get('status'),
+            source: formData.get('source'),
+            propertySlug: formData.get('propertySlug'),
+            requirementDetails: reqDetails
+        };
+    } 
+   else if (type === 'project') {
+    let configs = [], amens = {}, conn = [], lands = [], usp = [];
+    
+    try {
+        configs = JSON.parse(formData.get('configurations') || '[]');
+        amens = JSON.parse(formData.get('amenities') || '{}');
+        conn = JSON.parse(formData.get('connectivity') || '[]');
+        lands = JSON.parse(formData.get('landmarks') || '[]');
+        usp = JSON.parse(formData.get('usp') || '[]');
+    } catch(e) {
+        showToast('Invalid data format. Please check your inputs.', true);
+        return;
+    }
+    
+    payload = {
+        name: formData.get('name'),
+        slug: formData.get('slug'),
+        developer: formData.get('developer') || '',
+        liveStatus: formData.get('liveStatus'),
+        location: {
+            address: formData.get('address') || '',
+            city: formData.get('city') || '',
+            sector: formData.get('sector') || ''
+        },
+        configurations: configs,
+        amenities: amens,
+        connectivity: conn,
+        landmarks: lands,
+        features: { usp }
+    };
+}
+    else if (type === 'property') {
+        let gated = {};
+        
+        function safeJsonParse(str, defaultValue, fieldName) {
+            if (!str || !str.trim()) return defaultValue;
+            try {
+                let cleaned = str.replace(/'/g, '"').replace(/\n/g, ' ').replace(/\r/g, '');
+                return JSON.parse(cleaned);
+            } catch(e) {
+                console.error(`${fieldName} parse error:`, e);
+                showToast(`${fieldName} JSON invalid. Use double quotes (") not single quotes (').`, true);
+                throw e;
+            }
+        }
+        
+        try {
+            gated = safeJsonParse(formData.get('gatedInfo'), {}, 'Gated Info');
+        } catch(e) { return; }
+        
+        payload = {
+            title: formData.get('title'),
+            slug: formData.get('slug'),
+            liveStatus: formData.get('liveStatus'),
+            featured: formData.get('featured') === 'true',
+            unitDetails: {
+                price: formData.get('price') || '',
+                priceValue: parseFloat(formData.get('priceValue')) || 0,
+                bedrooms: parseFloat(formData.get('bedrooms')) || 0,
+                bathrooms: parseInt(formData.get('bathrooms')) || 0,
+                sqft: parseInt(formData.get('sqft')) || 0,
+                type: formData.get('type')
+            },
+            gatedInfo: gated
+        };
+    }
+    
+    try {
+        const res = await fetch(endpoint, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showToast('Saved successfully');
+        loadAndDisplay();
+    } catch(err) {
+        showToast(err.message, true);
+    }
+}
+
+
+
+
+
+// ========== SIDEBAR & LOGOUT ==========
+    function setupSidebar() {
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (menuToggle) menuToggle.addEventListener('click', () => { sidebar.classList.toggle('open'); overlay.classList.toggle('active'); });
+        if (overlay) overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); });
+        document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.removeItem('adminToken'); window.location.href = '/luxuryadmin'; });
+        document.getElementById('adminName').innerText = 'Admin';
+    }
+    setupSidebar();
+setupSidebarCollapse();
+    
+    loadAndDisplay();
+</script>
+</body>
+</html>

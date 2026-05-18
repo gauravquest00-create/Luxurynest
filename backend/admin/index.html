@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>LuxuryNest Admin</title>
+    <link rel="icon" type="image/png" href="./logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- <link rel="stylesheet" href="css/style.css"> -->
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/model.css">
+    <link rel="stylesheet" href="css/leads.css">
+    <link rel="stylesheet" href="css/project.css">
+    <link rel="stylesheet" href="css/area.css">
+   <link rel="stylesheet" href="css/property.css">
+   <link rel="stylesheet" href="css/profile.css">
+    <script>
+        const token = localStorage.getItem('adminToken');
+        if (!token) window.location.href = '/luxuryadmin/login.html';
+    </script>
+</head>
+<body>
+    <div class="app">
+        <!-- Desktop Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="/luxuryadmin/logo.png" alt="LuxuryNest" class="logo-img">
+                <h2>LuxuryNest</h2>
+                <button id="sidebarCollapseBtn" class="sidebar-collapse-btn"><i class="fas fa-chevron-left"></i></button>
+            </div>
+            <nav class="nav">
+                <a href="#" data-page="dashboard" class="nav-link active"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a>
+                <a href="#" data-page="leads" class="nav-link"><i class="fas fa-users"></i> <span>Leads</span></a>
+                <a href="#" data-page="projects" class="nav-link"><i class="fas fa-building"></i> <span>Projects</span></a>
+                <a href="#" data-page="properties" class="nav-link"><i class="fas fa-home"></i> <span>Properties</span></a>
+                <a href="#" data-page="areas" class="nav-link"><i class="fas fa-map-marker-alt"></i> <span>Areas</span></a>
+<a href="#" data-page="notifications" class="nav-link">
+    <i class="fas fa-bell"></i>
+    <span>Notifications</span>
+    <span class="nav-badge" id="notifCount">0</span>
+</a>                <a href="#" data-page="profile" class="nav-link"><i class="fas fa-user-circle"></i> <span>Profile</span></a>
+            </nav>
+            <div class="sidebar-footer"></div>
+        </aside>
+
+        <!-- Main Content -->
+      <main class="main-content" id="mainContent" style="overflow: visible; position: relative;">
+            <header class="top-bar" style="position: sticky; top: 0; z-index: 99; background: white;">
+                <div class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></div>
+                <div class="search-area" id="dynamicSearch"></div>
+                <div class="admin-actions">
+                    <button id="quickAddBtn" class="btn-primary quick-add"><i class="fas fa-plus"></i> Quick Add</button>
+                    <div class="admin-profile"><i class="fas fa-user-circle"></i> <span id="adminName"></span></div>
+                </div>
+            </header>
+            <div id="pageContent" class="page-content">
+    <div class="page-inner" id="pageInner"></div>
+<div class="loading">Loading...</div></div>
+        </main>
+
+        <!-- Mobile Bottom Navigation -->
+        <div class="bottom-nav" id="bottomNav">
+            <a href="#" data-page="dashboard" class="bottom-nav-item active"><i class="fas fa-tachometer-alt"></i><span>Home</span></a>
+            <a href="#" data-page="leads" class="bottom-nav-item"><i class="fas fa-users"></i><span>Leads</span></a>
+            <a href="#" data-page="projects" class="bottom-nav-item"><i class="fas fa-building"></i><span>Projects</span></a>
+            <a href="#" data-page="properties" class="bottom-nav-item"><i class="fas fa-home"></i><span>Properties</span></a>
+            <a href="#" data-page="areas" class="bottom-nav-item"><i class="fas fa-map-marker-alt"></i><span>Areas</span></a>
+            <a href="#" data-page="notifications" class="bottom-nav-item"><i class="fas fa-bell"></i><span>Alerts</span></a>
+            <a href="#" data-page="profile" class="bottom-nav-item"><i class="fas fa-user-circle"></i><span>Profile</span></a>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div id="modalContainer"></div>
+
+    <!-- JS Modules (existing order) -->
+    <script src="js/utils.js"></script>
+    <script src="js/modals.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/leads.js"></script>
+    <script src="js/projects.js"></script>
+    <script src="js/properties.js"></script>
+    <script src="js/areas.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/main.js"></script>
+
+    <!-- Bottom Navigation & Active Sync Script (does not modify existing logic) -->
+    <script>
+        (function() {
+            // Wait for DOM and main.js loadPage to be ready
+            function initBottomNav() {
+                const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+                if (!bottomNavItems.length) return;
+                
+                // Function to update active state in bottom nav based on current page
+                function updateBottomNavActive(page) {
+                    bottomNavItems.forEach(item => {
+                        const itemPage = item.getAttribute('data-page');
+                        if (itemPage === page) {
+                            item.classList.add('active');
+                        } else {
+                            item.classList.remove('active');
+                        }
+                    });
+                }
+                
+                // Hook into loadPage (if available) to sync active class
+                const originalLoadPage = window.loadPage;
+                if (typeof originalLoadPage === 'function') {
+                    window.loadPage = function(page, ...args) {
+                        originalLoadPage(page, ...args);
+                        updateBottomNavActive(page);
+                    };
+                } else if (typeof window.loadPage === 'undefined' && typeof loadPage !== 'undefined') {
+                    const originalGlobalLoadPage = loadPage;
+                    window.loadPage = function(page, ...args) {
+                        originalGlobalLoadPage(page, ...args);
+                        updateBottomNavActive(page);
+                    };
+                }
+                
+                // Add click handlers to bottom nav items
+                bottomNavItems.forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const page = item.getAttribute('data-page');
+                        if (page && typeof window.loadPage === 'function') {
+                            window.loadPage(page);
+                        } else if (page && typeof loadPage === 'function') {
+                            loadPage(page);
+                        }
+                        // Close mobile sidebar if open
+                        if (window.innerWidth <= 768 && typeof window.closeSidebar === 'function') {
+                            window.closeSidebar();
+                        }
+                    });
+                });
+                
+                // Initial sync when page loads
+                const currentActiveSidebar = document.querySelector('.nav-link.active');
+                if (currentActiveSidebar) {
+                    const currentPage = currentActiveSidebar.getAttribute('data-page');
+                    updateBottomNavActive(currentPage);
+                }
+            }
+            
+            // Run after all scripts have loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initBottomNav);
+            } else {
+                initBottomNav();
+            }
+        })();
+    </script>
+
+    <script>
+        (function() {
+            var nameSpan = document.getElementById('adminName');
+            if (nameSpan && !nameSpan.innerText) nameSpan.innerText = 'Admin';
+        })();
+    </script>
+</body>
+</html>
