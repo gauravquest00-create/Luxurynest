@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import API from "../config/api";
-// ✅ FIX: remove extra /api
-const API_BASE = 'https://luxurynest.onrender.com';
+
 function Advisors() {
   const [advisors, setAdvisors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +10,8 @@ function Advisors() {
   useEffect(() => {
     const fetchAdvisors = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/advisors`);
+        // ✅ FIX: use global API
+        const res = await axios.get(`${API}/api/advisors`);
         setAdvisors(res.data);
       } catch (err) {
         console.error('Failed to fetch advisors', err);
