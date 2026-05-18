@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://luxurynest.onrender.com/api';
-const STATIC_BASE = API_BASE.replace('/api', '');
+import API from "../config/api";
+// ✅ FIX: remove extra /api
+const API_BASE = 'https://luxurynest.onrender.com';
 
 function FeaturedWork() {
   const [properties, setProperties] = useState([]);
