@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API from "../config/api";
-// ✅ FIX: remove extra /api
-const API_BASE = 'https://luxurynest.onrender.com';
+
 // Extended static list of real estate brands (fallback)
 const FALLBACK_BRANDS = [
   'M3M', 'Smartworld', 'Signature Global', 'Emaar India', 'Vatika', 'SS Group',
@@ -21,12 +20,16 @@ function Brands() {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/projects/names`);
+        // ✅ FIX: use global API
+        const res = await axios.get(`${API}/api/projects/names`);
+
         let data = [];
+
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
           data = [...new Set(res.data)];
+
           console.log('Brands from API:', data.length);
-          // If API returns less than 3 brands, use fallback to show variety
+
           if (data.length < 3) {
             console.warn('API returned few brands, using fallback list');
             data = [...new Set([...data, ...FALLBACK_BRANDS])];
@@ -35,6 +38,7 @@ function Brands() {
           console.warn('API returned no brands, using fallback list');
           data = [...FALLBACK_BRANDS];
         }
+
         setBrands(data);
       } catch (err) {
         console.error('Error fetching brands, using fallback:', err);
@@ -43,6 +47,7 @@ function Brands() {
         setLoading(false);
       }
     };
+
     fetchBrands();
   }, []);
 
@@ -50,15 +55,21 @@ function Brands() {
     navigate(`/deals?brand=${encodeURIComponent(brandName)}`);
   };
 
-  // Duplicate enough to ensure seamless scroll (minimum 2 copies, more for smoother transition)
-  const duplicatedBrands = brands.length > 0 ? [...brands, ...brands, ...brands] : [];
+  const duplicatedBrands =
+    brands.length > 0 ? [...brands, ...brands, ...brands] : [];
 
   const getAvatarUrl = (name) => {
     const encoded = encodeURIComponent(name);
     return `https://ui-avatars.com/api/?name=${encoded}&background=C6A43F&color=fff&size=70&bold=true&length=2&rounded=true`;
   };
 
-  if (loading) return <div className="brands-loading" style={{ textAlign: 'center', padding: '3rem' }}>Loading partners...</div>;
+  if (loading)
+    return (
+      <div className="brands-loading" style={{ textAlign: 'center', padding: '3rem' }}>
+        Loading partners...
+      </div>
+    );
+
   if (brands.length === 0) return null;
 
   return (
@@ -69,6 +80,7 @@ function Brands() {
           <h2 className="section-title">Trusted by Leading Builders</h2>
         </div>
       </div>
+
       <div className="brands-marquee-wrapper">
         <div className="brands-marquee">
           <div className="brands-track">
@@ -80,7 +92,12 @@ function Brands() {
                 style={{ cursor: 'pointer' }}
               >
                 <div className="brand-card">
-                  <img src={getAvatarUrl(brand)} alt={brand} className="brand-avatar" loading="lazy" />
+                  <img
+                    src={getAvatarUrl(brand)}
+                    alt={brand}
+                    className="brand-avatar"
+                    loading="lazy"
+                  />
                   <div className="brand-name">{brand}</div>
                 </div>
               </div>
