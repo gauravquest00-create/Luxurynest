@@ -53,7 +53,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/advisors', advisorRoutes);
 app.use('/api/leads', leadRoutes);
-app.use('/api/otp', otpRoutes);
+
 app.use('/api/admin', adminRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/areas', areaRoutes);
