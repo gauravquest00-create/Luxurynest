@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ReusableLeadForm from '../components/ReusableLeadForm';
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://luxurynest.onrender.com/api';
 const STATIC_BASE = API_BASE.replace('/api', '');
 
 function PropertyDetailPage() {
