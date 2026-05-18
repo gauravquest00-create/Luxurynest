@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API from "../config/api";
+// ✅ FIX: remove extra /api
+const API_BASE = 'https://luxurynest.onrender.com';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://luxurynest.onrender.com/api';
-const STATIC_BASE = API_BASE.replace('/api', '');
 
 function DealsPage() {
   const navigate = useNavigate();
