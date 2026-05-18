@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ReusableLeadForm from '../components/ReusableLeadForm';
 import '../style/AdvisorPage.css';
-const API_BASE = import.meta.env.VITE_API_URL || 'https://luxurynest.onrender.com/api/';
+const API_BASE = 'https://luxurynest.onrender.com/api/'
 
 function AdvisorPage() {
   const [advisors, setAdvisors] = useState([]);
