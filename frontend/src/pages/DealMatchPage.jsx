@@ -2,9 +2,9 @@ import { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import '../style/DealMatchPage.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://luxurynest.onrender.com/api';
-const STATIC_BASE = API_BASE.replace('/api', '');
+import API from "../config/api";
+// ✅ FIX: remove extra /api
+const API_BASE = 'https://luxurynest.onrender.com';
 
 function DealMatchPage() {
   const [formData, setFormData] = useState({
