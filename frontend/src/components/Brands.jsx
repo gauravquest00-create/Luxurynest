@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://luxurynest.onrender.com/api';
-
+import API from "../config/api";
+// ✅ FIX: remove extra /api
+const API_BASE = 'https://luxurynest.onrender.com';
 // Extended static list of real estate brands (fallback)
 const FALLBACK_BRANDS = [
   'M3M', 'Smartworld', 'Signature Global', 'Emaar India', 'Vatika', 'SS Group',
