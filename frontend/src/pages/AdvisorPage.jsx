@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ReusableLeadForm from '../components/ReusableLeadForm';
 import '../style/AdvisorPage.css';
-
+import API from "../config/api";
 // ✅ FIX: remove extra /api
 const API_BASE = 'https://luxurynest.onrender.com';
 
