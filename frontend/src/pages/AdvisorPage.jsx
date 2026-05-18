@@ -18,7 +18,7 @@ function AdvisorPage() {
   useEffect(() => {
     const fetchAdvisors = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/advisors`);
+        const res = await axios.get(`${API_BASE}/api/advisors`);
         setAdvisors(res.data);
         if (res.data.length > 0) setSelectedAdvisorId(res.data[0]._id);
       } catch (err) {
