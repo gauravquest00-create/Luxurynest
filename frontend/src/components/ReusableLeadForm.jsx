@@ -2,9 +2,9 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../style/Reusable.css'; // Import CSS
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://luxurynest.onrender.com/api';
-
+import API from "../config/api";
+// ✅ FIX: remove extra /api
+const API_BASE = 'https://luxurynest.onrender.com';
 function ReusableLeadForm({
   isOpen,
   onClose,
