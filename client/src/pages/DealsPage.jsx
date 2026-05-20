@@ -148,12 +148,32 @@ function DealsPage() {
     navigate('/');
   };
 
-  const getImageUrl = (path) => {
-    if (!path) return 'https://via.placeholder.com/400x250?text=No+Image';
-    if (path.startsWith('http')) return path;
-    const normalized = path.startsWith('/') ? path : `/${path}`;
-    return `${STATIC_BASE}${normalized}`;
-  };
+ const API_BASE = 'https://luxurynest.onrender.com/api';
+const STATIC_BASE = 'https://luxurynest.onrender.com'; // Direct URL
+
+const getImageUrl = (path) => {
+  // No image path - return placeholder
+  if (!path) {
+    return 'https://via.placeholder.com/400x250?text=No+Image';
+  }
+  
+  // Already absolute URL (http or https)
+  if (path.startsWith('http')) {
+    return path;
+  }
+  
+  // Ensure path starts with /uploads/
+  let normalizedPath = path;
+  if (!normalizedPath.startsWith('/')) {
+    normalizedPath = `/${normalizedPath}`;
+  }
+  if (!normalizedPath.startsWith('/uploads/')) {
+    normalizedPath = `/uploads${normalizedPath}`;
+  }
+  
+  // Return full URL
+  return `${STATIC_BASE}${normalizedPath}`;
+};
 
   if (loading && properties.length === 0) {
     return (
