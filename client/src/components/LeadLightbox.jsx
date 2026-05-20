@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE ='https://luxurynest.onrender.com/api';
 
 function LeadLightbox({ isOpen, onClose, propertySlug, propertyTitle, advisorId }) {
   const [step, setStep] = useState('phone'); // 'phone', 'otp', 'details'
