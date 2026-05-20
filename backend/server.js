@@ -22,48 +22,47 @@ connectDB();
 
 const app = express();
 
-
-// ✅ FIXED CORS (VERY IMPORTANT)
+// ✅ FIXED CORS - Allow all origins for now (for testing)
 app.use(cors({
   origin: [
-    'https://luxurynest.vercel.app', // frontend
-    'http://localhost:3000'          // local dev
+    'https://luxurynest.vercel.app',
+    'https://luxurynest-f4t4bg3rn-gauravquest00-1690s-projects.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+// Handle preflight requests
+app.options('*', cors());
 
+app.use(express.json());
 
 // ✅ Path setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
 // ✅ Static Admin Panel
 app.use('/luxuryadmin', express.static(path.join(__dirname, 'admin')));
 
-
 // ✅ Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 
 // ✅ API Routes
 app.use('/api/projects', projectRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/advisors', advisorRoutes);
 app.use('/api/leads', leadRoutes);
-
 app.use('/api/admin', adminRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/areas', areaRoutes);
-
 
 // ✅ Health Check Route
 app.get('/', (req, res) => {
   res.send('🚀 LuxuryNest API is running...');
 });
-
 
 // ✅ Auto-create Admin (SAFE VERSION)
 const createDefaultAdmin = async () => {
@@ -88,11 +87,10 @@ const createDefaultAdmin = async () => {
   }
 };
 
-
-// ✅ Start Server AFTER DB + Admin setup
+// ✅ Start Server AFTER DB + Admin setup (FIXED async issue)
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  await createDefaultAdmin();
+  createDefaultAdmin(); // Removed await - call normally
 });
